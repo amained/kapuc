@@ -64,10 +64,34 @@ cc_binary(
     ]
 )
 
+load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
+
+refresh_compile_commands(
+    name = "refresh_compile_commands_system_libgccjit",
+    targets = {
+      "//:kapuc": "--define use_system_libgccjit=true",
+    },
+)
+
+refresh_compile_commands(
+    name = "refresh_compile_commands_local_libgccjit",
+    targets = {
+      "//:kapuc": "",
+    },
+)
+
 alias(
     name = "kapuc",
     actual = select({
         ":use_system_libgccjit": ":kapuc_with_system_libgccjit",
         "//conditions:default": ":kapuc_without_system_libgccjit",
     }),
+)
+
+alias(
+    name = "refresh_compile_commands",
+    actual = select({
+        ":use_system_libgccjit": ":refresh_compile_commands_system_libgccjit",
+        "//conditions:default": ":refresh_compile_commands_local_libgccjit",
+    })
 )
