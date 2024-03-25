@@ -4,7 +4,9 @@ external
 build
 gcc-src
 install
-main.*
+main.o
+main.out
+main.dump
 
 gccjit.log
 
