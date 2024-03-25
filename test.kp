@@ -1,0 +1,6 @@
+# return [36, 69, 7 + 2, (5 * 3 - 2) / 4, 5, ..];
+# func printf(format: &char, ..): void {
+#     @_c_call("printf", format, ..);
+# }
+func main(): int {
+}

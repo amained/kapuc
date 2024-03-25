@@ -1,0 +1,73 @@
+# BUILD bagel file
+
+# TODO: make libgccjit build script into bagel file
+cc_library(
+    name = "libgccjit",
+    hdrs = ["install/include/libgccjit.h"],
+    srcs = ["install/lib/libgccjit.so"],
+)
+
+config_setting(
+    name = "use_system_libgccjit",
+    values = {"define": "use_system_libgccjit=true"},
+)
+
+cc_binary(
+    name = "kapuc_with_system_libgccjit",
+    srcs = [
+        "lib/log.c",
+        "lib/log.h",
+        "lib/sds.c",
+        "lib/sds.h",
+        "lib/env_args.h",
+        "lib/sdsalloc.h",
+        "lib/stb_ds.h",
+        "src/kapuc/code_tree.c",
+        "src/kapuc/code_tree.h",
+        "src/kapuc/helper.h",
+        "src/kapuc/lex.c",
+        "src/kapuc/lex.h",
+        "src/kapuc/main.c",
+        "src/kapuc/parse.c",
+        "src/kapuc/parse.h",
+    ],
+    copts = [
+        "-O2 -H",
+    ],
+    linkopts = ["-lgccjit"]
+)
+
+cc_binary(
+    name = "kapuc_without_system_libgccjit",
+    srcs = [
+        "lib/log.c",
+        "lib/log.h",
+        "lib/sds.c",
+        "lib/sds.h",
+        "lib/env_args.h",
+        "lib/sdsalloc.h",
+        "lib/stb_ds.h",
+        "src/kapuc/code_tree.c",
+        "src/kapuc/code_tree.h",
+        "src/kapuc/helper.h",
+        "src/kapuc/lex.c",
+        "src/kapuc/lex.h",
+        "src/kapuc/main.c",
+        "src/kapuc/parse.c",
+        "src/kapuc/parse.h",
+    ],
+    copts = [
+        "-O2 -Iinstall/include -H",
+    ],
+    deps = [
+        ":libgccjit",
+    ]
+)
+
+alias(
+    name = "kapuc",
+    actual = select({
+        ":use_system_libgccjit": ":kapuc_with_system_libgccjit",
+        "//conditions:default": ":kapuc_without_system_libgccjit",
+    }),
+)

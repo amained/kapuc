@@ -1,0 +1,14 @@
+bazel-*
+external
+
+build
+gcc-src
+install
+main.*
+
+gccjit.log
+
+**/*.swp
+
+.cache
+compile_commands.json
