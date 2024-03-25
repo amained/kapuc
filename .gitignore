@@ -2,7 +2,6 @@ bazel-*
 external
 
 build
-gcc-src
 install
 main.o
 main.out
