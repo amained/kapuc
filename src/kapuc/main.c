@@ -33,7 +33,7 @@ static void create_code(gcc_jit_context *ctxt, gcc_jit_function **greet) {
       gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_CONST_CHAR_PTR);
   gcc_jit_param *param_name =
       gcc_jit_context_new_param(ctxt, NULL, const_char_ptr_type, "name");
-  *greet = gcc_jit_context_new_function(ctxt, NULL, GCC_JIT_FUNCTION_EXPORTED,
+  *greet = gcc_jit_context_new_function(ctxt, NULL, GCC_JIT_FUNCTION_INTERNAL,
                                         void_type, "greet", 1, &param_name, 0);
 
   gcc_jit_param *param_format =
@@ -54,11 +54,12 @@ static void create_code(gcc_jit_context *ctxt, gcc_jit_function **greet) {
   gcc_jit_block_end_with_void_return(block, NULL);
 }
 
-static void generate_main(gcc_jit_context *ctxt, gcc_jit_function *greet_func) {
+static void generate_main(gcc_jit_context *ctxt, gcc_jit_function *greet_func,
+                          gcc_jit_function **main_ptr) {
   gcc_jit_type *void_type = gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_VOID);
   gcc_jit_type *int_type = gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_INT8_T);
   gcc_jit_function *main_func = gcc_jit_context_new_function(
-      ctxt, NULL, GCC_JIT_FUNCTION_EXPORTED, void_type, "main", 0, NULL, 0);
+      ctxt, NULL, GCC_JIT_FUNCTION_EXPORTED, int_type, "main", 0, NULL, 0);
   gcc_jit_block *block =
       gcc_jit_function_new_block(main_func, "kapuc_block_main");
   // greet call
@@ -76,6 +77,38 @@ static void generate_main(gcc_jit_context *ctxt, gcc_jit_function *greet_func) {
       0);
   gcc_jit_rvalue *args[] = {
       gcc_jit_context_new_rvalue_from_int(ctxt, int_type, 0)};
+  gcc_jit_block_add_eval(
+      block, NULL, gcc_jit_context_new_call(ctxt, NULL, exit_func, 1, args));
+  gcc_jit_block_end_with_return(
+      block, NULL, gcc_jit_context_new_rvalue_from_int(ctxt, int_type, 0));
+  *main_ptr = main_func;
+}
+
+static void generate_start(gcc_jit_context *ctxt, gcc_jit_function *main_func,
+                           gcc_jit_function *greet_func) {
+  gcc_jit_type *void_type = gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_VOID);
+  gcc_jit_type *int_type = gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_INT8_T);
+
+  gcc_jit_function *start_func = gcc_jit_context_new_function(
+      ctxt, NULL, GCC_JIT_FUNCTION_EXPORTED, void_type, "_start", 0, NULL, 0);
+  gcc_jit_block *block =
+      gcc_jit_function_new_block(start_func, "kapuc_block__start");
+  // greet call
+  gcc_jit_rvalue *args_greet[] = {
+      gcc_jit_context_new_string_literal(ctxt, "gccjit")};
+  gcc_jit_block_add_eval(
+      block, NULL,
+      gcc_jit_context_new_call(ctxt, NULL, greet_func, 1, args_greet));
+  // exit call
+  gcc_jit_rvalue *main_exit =
+      gcc_jit_context_new_call(ctxt, NULL, main_func, 0, NULL);
+  gcc_jit_param *param_exit =
+      gcc_jit_context_new_param(ctxt, NULL, int_type, "exit");
+  gcc_jit_function *exit_func = gcc_jit_context_new_function(
+      ctxt, NULL, GCC_JIT_FUNCTION_IMPORTED,
+      gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_VOID), "exit", 1, &param_exit,
+      0);
+  gcc_jit_rvalue *args[] = {main_exit};
   gcc_jit_block_add_eval(
       block, NULL, gcc_jit_context_new_call(ctxt, NULL, exit_func, 1, args));
   gcc_jit_block_end_with_void_return(block, NULL);
@@ -106,13 +139,14 @@ int idek() {
                                   1);
   gcc_jit_context_set_int_option(ctxt, GCC_JIT_INT_OPTION_OPTIMIZATION_LEVEL,
                                  3);
+  gcc_jit_context_set_bool_option(ctxt, GCC_JIT_BOOL_OPTION_DEBUGINFO, 1);
   FILE *f = fopen("gccjit.log", "w+");
   if (f == NULL) {
     log_debug("failed to open log, not setting up log i guess");
   } else {
     gcc_jit_context_set_logfile(ctxt, f, 0, 0);
   }
-  gcc_jit_timer_push(timer, "create_code");
+  gcc_jit_timer_push(timer, "Create code");
   /* Populate the context.  */
   gcc_jit_function *func_ptr = NULL;
   create_code(ctxt, &func_ptr);
@@ -120,17 +154,27 @@ int idek() {
     log_debug("failed to create code");
     return 1;
   }
-  generate_main(ctxt, func_ptr);
-  gcc_jit_timer_pop(timer, "create_code");
+  gcc_jit_function *main_ptr = NULL;
+  generate_main(ctxt, func_ptr, &main_ptr);
+  if (main_ptr == NULL) {
+    log_debug("failed to create code");
+    return 1;
+  }
+  generate_start(ctxt, main_ptr, func_ptr);
+  gcc_jit_timer_pop(timer, "Create code");
 
-  gcc_jit_timer_push(timer, "compile");
+  gcc_jit_timer_push(timer, "Compile");
   /* Compile the code.  */
+  gcc_jit_context_add_driver_option(ctxt, "-nostdlib");
+  gcc_jit_context_add_driver_option(ctxt, "-lc");
   gcc_jit_context_compile_to_file(ctxt, GCC_JIT_OUTPUT_KIND_EXECUTABLE,
                                   "./main.out");
-  gcc_jit_timer_pop(timer, "compile");
+  gcc_jit_timer_pop(timer, "Compile");
 
   /* Dump C-like shit */
+  gcc_jit_timer_push(timer, "Dump C-Like representation");
   gcc_jit_context_dump_to_file(ctxt, "./main.dump", false);
+  gcc_jit_timer_pop(timer, "Dump C-Like representation");
 
   gcc_jit_timer_print(timer, stderr);
   gcc_jit_timer_release(timer);
