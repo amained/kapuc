@@ -1,10 +1,11 @@
 # BUILD bagel file
 
 # TODO: make libgccjit build script into bagel file
-cc_library(
+cc_import(
     name = "libgccjit",
     hdrs = ["install/include/libgccjit.h"],
-    srcs = ["install/lib/libgccjit.so"],
+    shared_library = "install/lib/libgccjit.so.0",
+    system_provided = 0,
 )
 
 config_setting(
@@ -57,7 +58,7 @@ cc_binary(
         "src/kapuc/parse.h",
     ],
     copts = [
-        "-O2 -Iinstall/include -H",
+        "-O2 -H",
     ],
     deps = [
         ":libgccjit",
