@@ -6,7 +6,6 @@
 
 #define STB_DS_IMPLEMENTATION
 #define SHIT_IS_IN_TESTING
-#include "code_tree.h"
 #include "lex.h"
 #include "lib/stb_ds.h"
 #include "libgccjit.h"
@@ -228,12 +227,6 @@ int main(const int argc, char **argv) {
 #ifdef SUPER_AGGRESSIVE_DEBUG
     print_tree(&tree, 0);
 #endif
-    log_debug("codegen started");
-    BENCH_TIMER_HELPER("treegen'ed", struct CodeTreeNode code_tree =
-                                         generate_function(&tree);)
-    log_debug("codegen finished");
-    print_tree_node(&code_tree, 0);
-
     free_parser(&p);
     free_tree(&tree);
   }
