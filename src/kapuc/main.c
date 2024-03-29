@@ -34,7 +34,8 @@ static void create_code(gcc_jit_context *ctxt, gcc_jit_function **greet) {
   gcc_jit_param *param_name =
       gcc_jit_context_new_param(ctxt, NULL, const_char_ptr_type, "name");
   *greet = gcc_jit_context_new_function(ctxt, NULL, GCC_JIT_FUNCTION_INTERNAL,
-                                        void_type, "greet", 1, &param_name, 0);
+                                        void_type, "main__main_greet", 1,
+                                        &param_name, 0);
 
   gcc_jit_param *param_format =
       gcc_jit_context_new_param(ctxt, NULL, const_char_ptr_type, "format");
@@ -47,7 +48,7 @@ static void create_code(gcc_jit_context *ctxt, gcc_jit_function **greet) {
   arrput(args, gcc_jit_param_as_rvalue(param_name));
 
   gcc_jit_block *block =
-      gcc_jit_function_new_block(*greet, "kapuc_block_greet");
+      gcc_jit_function_new_block(*greet, "block main__main_greet");
 
   gcc_jit_block_add_eval(
       block, NULL, gcc_jit_context_new_call(ctxt, NULL, printf_func, 2, args));
@@ -56,12 +57,12 @@ static void create_code(gcc_jit_context *ctxt, gcc_jit_function **greet) {
 
 static void generate_main(gcc_jit_context *ctxt, gcc_jit_function *greet_func,
                           gcc_jit_function **main_ptr) {
-  gcc_jit_type *void_type = gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_VOID);
   gcc_jit_type *int_type = gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_INT8_T);
-  gcc_jit_function *main_func = gcc_jit_context_new_function(
-      ctxt, NULL, GCC_JIT_FUNCTION_EXPORTED, int_type, "main", 0, NULL, 0);
+  gcc_jit_function *main_func =
+      gcc_jit_context_new_function(ctxt, NULL, GCC_JIT_FUNCTION_EXPORTED,
+                                   int_type, "main__main", 0, NULL, 0);
   gcc_jit_block *block =
-      gcc_jit_function_new_block(main_func, "kapuc_block_main");
+      gcc_jit_function_new_block(main_func, "block main__main");
   // greet call
   gcc_jit_rvalue *args_greet[] = {
       gcc_jit_context_new_string_literal(ctxt, "world")};
@@ -92,7 +93,7 @@ static void generate_start(gcc_jit_context *ctxt, gcc_jit_function *main_func,
   gcc_jit_function *start_func = gcc_jit_context_new_function(
       ctxt, NULL, GCC_JIT_FUNCTION_EXPORTED, void_type, "_start", 0, NULL, 0);
   gcc_jit_block *block =
-      gcc_jit_function_new_block(start_func, "kapuc_block__start");
+      gcc_jit_function_new_block(start_func, "internal start");
   // greet call
   gcc_jit_rvalue *args_greet[] = {
       gcc_jit_context_new_string_literal(ctxt, "gccjit")};

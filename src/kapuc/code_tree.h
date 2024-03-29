@@ -7,43 +7,43 @@
 
 // maybe we should have class in c
 typedef struct CodeTreeNode CodeTreeNode;
-//typedef void (*CodeGenFunc)(CodeTreeNode*);
+// typedef void (*CodeGenFunc)(CodeTreeNode*);
 
 typedef union NodeValue {
-    int intVal;
-    float floatVal;
-    char* stringVal;
+  int intVal;
+  float floatVal;
+  char *stringVal;
 } NodeValue;
 
 typedef enum CodeTreeNodeType {
-    q_err,
-    // normal stuff
-    t_file,
-    t_func,
-    t_types,
-    t_let,
-    t_return,
-    t_block,
-    // data stuff
-    d_int,
-    d_type,
-    d_pointer_get_address,
-    d_pointer_get_value,
-    // operation stuff
-    e_expr,
-    e_add,
-    e_minus,
-    e_multiply,
-    e_divide,
-    // coffee, internal one starts with _
-    c__c_call,
+  q_err,
+  // normal stuff
+  t_file,
+  t_func,
+  t_types,
+  t_let,
+  t_return,
+  t_block,
+  // data stuff
+  d_int,
+  d_type,
+  d_pointer_get_address,
+  d_pointer_get_value,
+  // operation stuff
+  e_expr,
+  e_add,
+  e_minus,
+  e_multiply,
+  e_divide,
+  // coffee, internal one starts with _
+  c__c_call,
 } CodeTreeNodeType;
 
 struct CodeTreeNode {
-    enum CodeTreeNodeType type;
-    CodeTreeNode* children;
-    char* value;
-//    CodeGenFunc codegen;
+  enum CodeTreeNodeType type;
+  CodeTreeNode *children;
+  char *value;
+  //    CodeGenFunc codegen;
 };
 
 #ifdef SHIT_IS_IN_TESTING
@@ -53,4 +53,4 @@ struct CodeTreeNode generate_block(struct AST *tree);
 struct CodeTreeNode generate_function(struct AST *tree);
 #endif
 
-#endif //KAPUC_CODE_TREE_H
+#endif // KAPUC_CODE_TREE_H

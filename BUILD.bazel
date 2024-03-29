@@ -13,14 +13,34 @@ config_setting(
     values = {"define": "use_system_libgccjit=true"},
 )
 
+cc_library(
+    name = "sds",
+    srcs = ["lib/sds.c"],
+    hdrs = [
+        "lib/sds.h",
+        "lib/sdsalloc.h",
+    ],
+)
+
+cc_library(
+    name = "log",
+    srcs = ["lib/log.c"],
+    hdrs = ["lib/log.h"],
+)
+
+cc_import(
+    name = "stb_ds",
+    hdrs = ["lib/stb_ds.h"],
+)
+
 cc_binary(
     name = "kapuc_with_system_libgccjit",
     srcs = [
+        "lib/env_args.h",
         "lib/log.c",
         "lib/log.h",
         "lib/sds.c",
         "lib/sds.h",
-        "lib/env_args.h",
         "lib/sdsalloc.h",
         "lib/stb_ds.h",
         "src/kapuc/code_tree.c",
@@ -33,19 +53,24 @@ cc_binary(
         "src/kapuc/parse.h",
     ],
     copts = [
-        "-O2 -H",
+        "-O2",
     ],
-    linkopts = ["-lgccjit"]
+    linkopts = ["-lgccjit"],
+    deps = [
+        "log",
+        "sds",
+        "stb_ds",
+    ],
 )
 
 cc_binary(
     name = "kapuc_without_system_libgccjit",
     srcs = [
+        "lib/env_args.h",
         "lib/log.c",
         "lib/log.h",
         "lib/sds.c",
         "lib/sds.h",
-        "lib/env_args.h",
         "lib/sdsalloc.h",
         "lib/stb_ds.h",
         "src/kapuc/code_tree.c",
@@ -58,11 +83,14 @@ cc_binary(
         "src/kapuc/parse.h",
     ],
     copts = [
-        "-O2 -H",
+        "-O2",
     ],
     deps = [
+        "log",
+        "sds",
+        "stb_ds",
         ":libgccjit",
-    ]
+    ],
 )
 
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
@@ -70,14 +98,14 @@ load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile
 refresh_compile_commands(
     name = "refresh_compile_commands_system_libgccjit",
     targets = {
-      "//:kapuc": "--define use_system_libgccjit=true",
+        "//:kapuc": "--define use_system_libgccjit=true",
     },
 )
 
 refresh_compile_commands(
     name = "refresh_compile_commands_local_libgccjit",
     targets = {
-      "//:kapuc": "",
+        "//:kapuc": "",
     },
 )
 
@@ -94,5 +122,11 @@ alias(
     actual = select({
         ":use_system_libgccjit": ":refresh_compile_commands_system_libgccjit",
         "//conditions:default": ":refresh_compile_commands_local_libgccjit",
-    })
+    }),
+)
+
+filegroup(
+    name = "clang_tidy_config",
+    srcs = [".clang-tidy"],
+    visibility = ["//visibility:public"],
 )
