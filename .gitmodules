@@ -1,4 +1,1 @@
-[submodule "gcc-src"]
-	path = gcc-src
-	url = https://github.com/amained/gcc.git
-	shallow = true
+
