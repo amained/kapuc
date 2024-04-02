@@ -11,14 +11,15 @@
 #include "parse.h"
 #include <stdio.h>
 #include "llvm-c/Core.h"
+#include "llvm-c/Target.h"
+#include "llvm-c/TargetMachine.h"
 
 int main(const int argc, char **argv) {
   log_set_level(1);
   if (argc < 2) {
     log_error("Usage: %s <file>", argv[0]);
     exit(1);
-  }
-  bool no_parse;
+  } bool no_parse;
   char *x;
   env_arg_str("NO_PARSE", x, 0) if (x != NULL && strcmp(x, "yes") == 0) {
     no_parse = true;
@@ -26,8 +27,7 @@ int main(const int argc, char **argv) {
   else {
     no_parse = false;
   }
-  BENCH_TIMER_SETUP
-  FILE *f = fopen(argv[1], "r");
+  BENCH_TIMER_SETUP FILE *f = fopen(argv[1], "r");
   if (f == NULL) {
     log_error("Cannot open %s, exiting", argv[1]);
     exit(1);
@@ -55,7 +55,32 @@ int main(const int argc, char **argv) {
     free_parser(&p);
     log_debug("testing llvm");
     LLVMContextRef c = LLVMContextCreate();
-    LLVMContextDispose(c);
+    LLVMModuleRef module = LLVMModuleCreateWithName("add_module");
+    LLVMTypeRef param_types[] = { LLVMInt32Type(), LLVMInt32Type() };
+    LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 2, 0);
+    LLVMValueRef sum = LLVMAddFunction(module, "add", ret_type);
+    LLVMAddAttributeAtIndex(sum, -1, LLVMCreateStringAttribute(c, "wasm-export-name", 16, "sum", 3));
+
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(sum, "entry");
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    LLVMPositionBuilderAtEnd(builder, entry);
+
+    LLVMValueRef tmp = LLVMBuildAdd(builder, LLVMGetParam(sum, 0), LLVMGetParam(sum, 1), "tmp");
+    LLVMBuildRet(builder, tmp);
+    LLVMDumpModule(module);
+
+    LLVMDisposeBuilder(builder);
+
+LLVMInitializeAllTargetInfos();
+LLVMInitializeAllTargets();
+LLVMInitializeAllTargetMCs();
+LLVMInitializeAllAsmParsers();
+LLVMInitializeAllAsmPrinters();
+    char* triple = "wasm32-unknown-unknown";
+    LLVMTargetRef target = LLVMGetTargetFromName("wasm32");
+    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "", "", LLVMCodeGenLevelDefault, LLVMRelocDynamicNoPic, LLVMCodeModelMedium);
+    LLVMTargetMachineEmitToFile(machine, module, "test.wasm", LLVMObjectFile, NULL);
+    LLVMDisposeTargetMachine(machine);
     log_debug("end llvm test");
   }
 

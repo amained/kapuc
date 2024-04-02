@@ -1,0 +1,15 @@
+<html>
+    <script>
+        const importObject = {
+         env: {
+            __linear_memory: new WebAssembly.Memory({ initial: 0, maximum: 0 }),
+         }
+        };
+        WebAssembly.instantiateStreaming(fetch("./test.wasm"), importObject).then(
+          (results) => {
+        	  console.log(results.instance.exports);
+        	  alert("1 + 2 is " + results.instance.exports.sum(1, 2));
+          },
+        );
+    </script>
+</html>

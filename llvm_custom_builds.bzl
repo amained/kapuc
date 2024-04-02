@@ -1,30 +1,24 @@
 def _llvm_custom_builds_impl(ctx):
     # Construct the download URL dynamically using the architecture attribute
-    version = "16.x"
+    version = "17.x"
     
     # Determine the architecture and OS
-    if ctx.os.name == "linux":
-        if ctx.os.arch == "amd64":
-            name = "llvm-linux-amd64"
-        else:
-            fail("Unsupported architecture for Linux")
-    elif ctx.os.name == "mac os x":
-        if ctx.os.arch == "arm64":
-            name = "llvm-darwin-amd64" 
-        else:
-            fail("Unsupported architecture for macOS")
-    else:
-        fail("Unsupported operating system")
-    
+    name = ctx.attr.name
     # Download and extract the LLVM package
     ctx.download_and_extract(
-        url = "https://github.com/wasmerio/llvm-custom-builds/releases/download/%s/%s.tar.xz" % (version, name)
+        # TODO: fix whatever is .x.zip
+        url = "https://github.com/amained/llvm-custom-builds/releases/download/%s/llvm-%s-%s.zip" % (version, name, version)
+    )
+    
+    ctx.extract(
+            "llvm.tar.xz"
     )
     
     # Construct the full path to llvm-config
     llvm_config_path = "bin/llvm-config"
     
     # Execute llvm-config to get the necessary compiler flags and linker flags
+    # TODO: change linkopts to include only needed flags
     copts_execute = ctx.execute([llvm_config_path, "--cflags"], quiet=False)
     linkopts_execute = ctx.execute([llvm_config_path, "--ldflags", "--system-libs", "--libs"], quiet=False)
 
@@ -62,7 +56,4 @@ cc_library(
 # Define the repository rule with architecture as an attribute
 llvm = repository_rule(
     implementation = _llvm_custom_builds_impl,
-    attrs = {
-        "architecture": attr.string(mandatory = True),
-    },
 )
