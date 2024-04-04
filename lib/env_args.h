@@ -1,4 +1,5 @@
 // env_args.h is a 1 file library to get arguments from env.
+// TODO: Refactor this so that we could parse argv too
 #include <stdlib.h>
 
 #ifndef CLWB_ENV_ARGS_H
