@@ -16,152 +16,185 @@
 
 // Testing LLVM, incase something f'ed up
 
-void test_llvm_wasm() {
-  LLVMContextRef c = LLVMContextCreate();
-  LLVMModuleRef module = LLVMModuleCreateWithName("llvm_test_wasm_module");
-  LLVMTypeRef param_types[] = {LLVMInt32Type(), LLVMInt32Type()};
-  LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 2, 0);
-  LLVMValueRef sum = LLVMAddFunction(module, "add", ret_type);
-  LLVMAddAttributeAtIndex(
-      sum, -1, LLVMCreateStringAttribute(c, "wasm-export-name", 16, "sum", 3)); // Wasm export thing, https://reviews.llvm.org/D70520 (old LLVM's phabricator thing)
-										// Maybe we could do more stuff with this (export alias in WASM?)
+void
+test_llvm_wasm()
+{
+    LLVMContextRef c = LLVMContextCreate();
+    LLVMModuleRef module = LLVMModuleCreateWithName("llvm_test_wasm_module");
+    LLVMTypeRef param_types[] = { LLVMInt32Type(), LLVMInt32Type() };
+    LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 2, 0);
+    LLVMValueRef sum = LLVMAddFunction(module, "add", ret_type);
+    LLVMAddAttributeAtIndex(
+      sum,
+      -1,
+      LLVMCreateStringAttribute(
+        c,
+        "wasm-export-name",
+        16,
+        "sum",
+        3)); // Wasm export thing, https://reviews.llvm.org/D70520 (old LLVM's
+             // phabricator thing) Maybe we could do more stuff with this
+             // (export alias in WASM?)
 
-  LLVMBasicBlockRef entry = LLVMAppendBasicBlock(sum, "entry");
-  LLVMBuilderRef builder = LLVMCreateBuilder();
-  LLVMPositionBuilderAtEnd(builder, entry);
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(sum, "entry");
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    LLVMPositionBuilderAtEnd(builder, entry);
 
-  LLVMValueRef tmp =
+    LLVMValueRef tmp =
       LLVMBuildAdd(builder, LLVMGetParam(sum, 0), LLVMGetParam(sum, 1), "tmp");
-  LLVMBuildRet(builder, tmp);
-  LLVMDumpModule(module);
+    LLVMBuildRet(builder, tmp);
+    LLVMDumpModule(module);
 
-  LLVMDisposeBuilder(builder);
-  LLVMContextDispose(c); // what is this consistency
-  char *triple = "wasm32-unknown-unknown";
-  LLVMTargetRef target = LLVMGetTargetFromName("wasm32");
-  LLVMTargetMachineRef machine =
-      LLVMCreateTargetMachine(target, triple, "", "", LLVMCodeGenLevelAggressive,
-                              LLVMRelocDynamicNoPic, LLVMCodeModelMedium);
-  LLVMTargetMachineEmitToFile(machine, module, "./wasm-test/test.wasm",
-                              LLVMObjectFile, NULL);
-  LLVMDisposeTargetMachine(machine);
+    LLVMDisposeBuilder(builder);
+    LLVMContextDispose(c); // what is this consistency
+    char* triple = "wasm32-unknown-unknown";
+    LLVMTargetRef target = LLVMGetTargetFromName("wasm32");
+    LLVMTargetMachineRef machine =
+      LLVMCreateTargetMachine(target,
+                              triple,
+                              "",
+                              "",
+                              LLVMCodeGenLevelAggressive,
+                              LLVMRelocDynamicNoPic,
+                              LLVMCodeModelMedium);
+    LLVMTargetMachineEmitToFile(
+      machine, module, "./wasm-test/test.wasm", LLVMObjectFile, NULL);
+    LLVMDisposeTargetMachine(machine);
 }
 
-void test_llvm_native() {
-  LLVMModuleRef module = LLVMModuleCreateWithName("llvm_test_native");
-  LLVMTypeRef param_types[] = {LLVMInt32Type(), LLVMInt32Type()};
-  LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 2, 0);
-  LLVMValueRef sum = LLVMAddFunction(module, "add", ret_type);
+void
+test_llvm_native()
+{
+    LLVMModuleRef module = LLVMModuleCreateWithName("llvm_test_native");
+    LLVMTypeRef param_types[] = { LLVMInt32Type(), LLVMInt32Type() };
+    LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 2, 0);
+    LLVMValueRef sum = LLVMAddFunction(module, "add", ret_type);
 
-  LLVMBasicBlockRef entry = LLVMAppendBasicBlock(sum, "entry");
-  LLVMBuilderRef builder = LLVMCreateBuilder();
-  LLVMPositionBuilderAtEnd(builder, entry);
-  LLVMValueRef tmp =
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(sum, "entry");
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    LLVMPositionBuilderAtEnd(builder, entry);
+    LLVMValueRef tmp =
       LLVMBuildAdd(builder, LLVMGetParam(sum, 0), LLVMGetParam(sum, 1), "tmp");
-  LLVMBuildRet(builder, tmp);
+    LLVMBuildRet(builder, tmp);
 
-LLVMTypeRef exit_arg_types[] = { LLVMInt32Type() };
-LLVMTypeRef exit_type = LLVMFunctionType(LLVMVoidType(), exit_arg_types, 1, 0);
-LLVMValueRef exit_func = LLVMAddFunction(module, "exit", exit_type);
+    LLVMTypeRef exit_arg_types[] = { LLVMInt32Type() };
+    LLVMTypeRef exit_type =
+      LLVMFunctionType(LLVMVoidType(), exit_arg_types, 1, 0);
+    LLVMValueRef exit_func = LLVMAddFunction(module, "exit", exit_type);
 
-  LLVMBuilderRef builder2 = LLVMCreateBuilder();
-  LLVMValueRef _start_func = LLVMAddFunction(module, "_start", LLVMFunctionType(LLVMVoidType(), NULL, 0, 0));
-  LLVMBasicBlockRef _start_block = LLVMAppendBasicBlock(_start_func, "_start_real_entry");
-  LLVMPositionBuilderAtEnd(builder2, _start_block);
-  LLVMValueRef arg[] = {LLVMConstInt(LLVMInt32Type(), 0, 0)};
-  LLVMBuildCall2(builder2, exit_type, exit_func, arg, 1, "");
-  LLVMBuildUnreachable(builder2);
-  LLVMDumpModule(module);
-  
-  LLVMDisposeBuilder(builder);
-  LLVMDisposeBuilder(builder2);
+    LLVMBuilderRef builder2 = LLVMCreateBuilder();
+    LLVMValueRef _start_func = LLVMAddFunction(
+      module, "_start", LLVMFunctionType(LLVMVoidType(), NULL, 0, 0));
+    LLVMBasicBlockRef _start_block =
+      LLVMAppendBasicBlock(_start_func, "_start_real_entry");
+    LLVMPositionBuilderAtEnd(builder2, _start_block);
+    LLVMValueRef arg[] = { LLVMConstInt(LLVMInt32Type(), 0, 0) };
+    LLVMBuildCall2(builder2, exit_type, exit_func, arg, 1, "");
+    LLVMBuildUnreachable(builder2);
+    LLVMDumpModule(module);
 
-  // We don't have to do this since we already initialized it in the wasm test, but anyways
-  LLVMInitializeAllTargetInfos();
-  LLVMInitializeAllTargets();
-  LLVMInitializeAllTargetMCs();
-  LLVMInitializeAllAsmParsers();
-  LLVMInitializeAllAsmPrinters();
-  char* triple = LLVMGetDefaultTargetTriple();
-  LLVMTargetRef t = NULL;
-  char* error = NULL;
-  LLVMBool l = LLVMGetTargetFromTriple(triple, &t, &error);
-  if (t == NULL || l != 0) {
-	  log_error("failed to get target: %s", error);
-	  LLVMDisposeMessage(error);
-  	  LLVMDisposeMessage(triple);
-	  exit(1);
-  }
-  LLVMTargetMachineRef machine = LLVMCreateTargetMachine(t, triple, "generic", "", LLVMCodeGenLevelAggressive, LLVMRelocDynamicNoPic, LLVMCodeModelMedium); // this should not error? TODO: maybe check for NULL?
-  // NOTE: This does not link! This just build object file (ELF in linux (and *nix?), idk what in Windows)
-  // To link on linux, specify -lc and -dynamic-linker to ld
-  LLVMTargetMachineEmitToFile(machine, module, "test.o",
-                              LLVMObjectFile, NULL);
-  LLVMDisposeMessage(triple);
-  LLVMDisposeTargetMachine(machine);
-}
+    LLVMDisposeBuilder(builder);
+    LLVMDisposeBuilder(builder2);
 
-int main(const int argc, char **argv) {
-  log_set_level(1);
-  if (argc < 2) {
-    log_error("Usage: %s <file>", argv[0]);
-    exit(1);
-  }
-  bool no_parse;
-  char *x;
-  env_arg_str("NO_PARSE", x, 0) if (x != NULL && strcmp(x, "yes") == 0) {
-    no_parse = true;
-  }
-  else {
-    no_parse = false;
-  }
-  BENCH_TIMER_SETUP FILE *f = fopen(argv[1], "r");
-  if (f == NULL) {
-    log_error("Cannot open %s, exiting", argv[1]);
-    exit(1);
-  }
-  log_debug("lexing started");
-  BENCH_TIMER_HELPER("lexed", struct TOK *tokens = lex(f);)
-  if (arrlast(tokens).t == T_ERR) {
-    log_error("failed lexing");
-    exit(1);
-  }
-  log_debug("lexing finished: got %d tokens", arrlen(tokens));
-#ifdef SUPER_AGGRESSIVE_DEBUG
-  for (int i = 0; i < arrlen(tokens); i++)
-    log_debug("tokens %d is %d: %s (pos: %ld-%ld)", i + 1, tokens[i].t,
-              tokens[i].s, tokens[i].start + 1, tokens[i].end + 1);
-#endif
-  if (!no_parse) {
-    log_debug("parsing started");
-    struct Parser p = {.tokens = tokens, .pos = 0, .filename = argv[1]};
-    if (p.error) {
-      log_error("failed parsing");
-      exit(1);
+    char* triple = LLVMGetDefaultTargetTriple();
+    LLVMTargetRef t = NULL;
+    char* error = NULL;
+    LLVMBool l = LLVMGetTargetFromTriple(triple, &t, &error);
+    if (t == NULL || l != 0) {
+        log_error("failed to get target: %s", error);
+        LLVMDisposeMessage(error);
+        LLVMDisposeMessage(triple);
+        exit(1);
     }
-    log_debug("parsing finished");
-    free_parser(&p);
-  }
+    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(
+      t,
+      triple,
+      "generic",
+      "",
+      LLVMCodeGenLevelAggressive,
+      LLVMRelocDynamicNoPic,
+      LLVMCodeModelMedium); // this should not error? TODO: maybe check for
+                            // NULL?
+    // NOTE: This does not link! This just build object file (ELF in linux (and
+    // *nix?), idk what in Windows) To link on linux, specify -lc and
+    // -dynamic-linker to ld
+    LLVMTargetMachineEmitToFile(
+      machine, module, "test.o", LLVMObjectFile, NULL);
+    LLVMDisposeMessage(triple);
+    LLVMDisposeTargetMachine(machine);
+}
+
+int
+main(const int argc, char** argv)
+{
+    log_set_level(1);
+    if (argc < 2) {
+        log_error("Usage: %s <file>", argv[0]);
+        exit(1);
+    }
+    bool no_parse;
+    char* x;
+    env_arg_str("NO_PARSE", x, 0) if (x != NULL && strcmp(x, "yes") == 0)
+    {
+        no_parse = true;
+    }
+    else
+    {
+        no_parse = false;
+    }
+    BENCH_TIMER_SETUP FILE* f = fopen(argv[1], "r");
+    if (f == NULL) {
+        log_error("Cannot open %s, exiting", argv[1]);
+        exit(1);
+    }
+    log_debug("lexing started");
+    BENCH_TIMER_HELPER("lexed", struct TOK* tokens = lex(f);)
+    if (arrlast(tokens).t == T_ERR) {
+        log_error("failed lexing");
+        exit(1);
+    }
+    log_debug("lexing finished: got %d tokens", arrlen(tokens));
+#ifdef SUPER_AGGRESSIVE_DEBUG
+    for (int i = 0; i < arrlen(tokens); i++)
+        log_debug("tokens %d is %d: %s (pos: %ld-%ld)",
+                  i + 1,
+                  tokens[i].t,
+                  tokens[i].s,
+                  tokens[i].start + 1,
+                  tokens[i].end + 1);
+#endif
+    if (!no_parse) {
+        log_debug("parsing started");
+        struct Parser p = { .tokens = tokens, .pos = 0, .filename = argv[1] };
+        if (p.error) {
+            log_error("failed parsing");
+            exit(1);
+        }
+        log_debug("parsing finished");
+        free_parser(&p);
+    }
     log_debug("testing llvm");
-// initialize all
-  LLVMInitializeAllTargetInfos();
-  LLVMInitializeAllTargets();
-  LLVMInitializeAllTargetMCs();
-  LLVMInitializeAllAsmParsers();
-  LLVMInitializeAllAsmPrinters();
+    // initialize all
+    LLVMInitializeAllTargetInfos();
+    LLVMInitializeAllTargets();
+    LLVMInitializeAllTargetMCs();
+    LLVMInitializeAllAsmParsers();
+    LLVMInitializeAllAsmPrinters();
 
     test_llvm_wasm();
     test_llvm_native();
-    LLVMShutdown(); // Somehow after disposing all, we need to shutdown (kind of make sense because LLVMInitialize*() stuff but very beautiful api design)
+    LLVMShutdown(); // Somehow after disposing all, we need to shutdown (kind of
+                    // make sense because LLVMInitialize*() stuff but very
+                    // beautiful api design)
     log_debug("end llvm test");
 
-  // cleanup
-  // for (int i = 0; i < arrlen(trees); i++) {
-  // free_ast(&trees[i]);
-  // }
-  // for (int i = 0; i < arrlen(tokens); i++) {
-  //    sdsfree(tokens[i].s);
-  // }
-  // arrfree(trees);
-  fclose(f);
+    // cleanup
+    // for (int i = 0; i < arrlen(trees); i++) {
+    // free_ast(&trees[i]);
+    // }
+    // for (int i = 0; i < arrlen(tokens); i++) {
+    //    sdsfree(tokens[i].s);
+    // }
+    // arrfree(trees);
+    fclose(f);
 }
