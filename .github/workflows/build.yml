@@ -28,4 +28,4 @@ jobs:
         disk-cache: ${{ github.workflow }}-${{ github.matrix.os }}
         repository-cache: true
     - name: Build with Bazel
-      run: bazel build :kapuc --action_env=CC=$(which gcc)
+      run: bazel build :kapuc
