@@ -24,6 +24,7 @@ test_llvm_wasm()
     LLVMTypeRef param_types[] = { LLVMInt32Type(), LLVMInt32Type() };
     LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 2, 0);
     LLVMValueRef sum = LLVMAddFunction(module, "add", ret_type);
+    LLVMSetLinkage(sum, LLVMExternalLinkage);
     LLVMAddAttributeAtIndex(
       sum,
       -1,
@@ -45,8 +46,6 @@ test_llvm_wasm()
     LLVMBuildRet(builder, tmp);
     LLVMDumpModule(module);
 
-    LLVMDisposeBuilder(builder);
-    LLVMContextDispose(c); // what is this consistency
     char* triple = "wasm32-unknown-unknown";
     LLVMTargetRef target = LLVMGetTargetFromName("wasm32");
     LLVMTargetMachineRef machine =
@@ -60,6 +59,11 @@ test_llvm_wasm()
     LLVMTargetMachineEmitToFile(
       machine, module, "./wasm-test/test.wasm", LLVMObjectFile, NULL);
     LLVMDisposeTargetMachine(machine);
+    LLVMDisposeBuilder(builder);
+    LLVMContextDispose(
+      c); // what is this consistency, also this needs to be disposed AFTER
+          // LLVMTargetMachineEmitToFile() or else we won't have the context in
+          // the module I think?
 }
 
 void
@@ -93,9 +97,6 @@ test_llvm_native()
     LLVMBuildUnreachable(builder2);
     LLVMDumpModule(module);
 
-    LLVMDisposeBuilder(builder);
-    LLVMDisposeBuilder(builder2);
-
     char* triple = LLVMGetDefaultTargetTriple();
     LLVMTargetRef t = NULL;
     char* error = NULL;
@@ -122,6 +123,8 @@ test_llvm_native()
       machine, module, "test.o", LLVMObjectFile, NULL);
     LLVMDisposeMessage(triple);
     LLVMDisposeTargetMachine(machine);
+    LLVMDisposeBuilder(builder);
+    LLVMDisposeBuilder(builder2);
 }
 
 int
