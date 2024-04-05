@@ -14,6 +14,8 @@
 #include "llvm-c/TargetMachine.h"
 #include <stdio.h>
 
+// Testing LLVM, incase something f'ed up
+
 void test_llvm_wasm() {
   LLVMContextRef c = LLVMContextCreate();
   LLVMModuleRef module = LLVMModuleCreateWithName("llvm_test_wasm_module");
