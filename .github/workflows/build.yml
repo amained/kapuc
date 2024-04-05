@@ -1,0 +1,24 @@
+name: Bazel Build
+
+on:
+ push:
+    branches:
+      - main
+ pull_request:
+    branches:
+      - main
+
+jobs:
+ build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Bazel
+      uses: bazelbuild/setup-bazel@v1
+      with:
+        bazel-version: 'latest'
+    - name: Build with Bazel
+      run: bazel build :kapuc
