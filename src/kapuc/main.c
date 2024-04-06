@@ -1,5 +1,4 @@
 #include "helper.h"
-#include "lib/env_args.h"
 #include "lib/log.h"
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,6 +6,7 @@
 #define STB_DS_IMPLEMENTATION
 #define SHIT_IS_IN_TESTING
 #include "lex.h"
+#include "lib/env_args.h"
 #include "lib/stb_ds.h"
 #include "parse.h"
 #include "llvm-c/Core.h"
@@ -44,7 +44,8 @@ test_llvm_wasm()
     LLVMValueRef tmp =
       LLVMBuildAdd(builder, LLVMGetParam(sum, 0), LLVMGetParam(sum, 1), "tmp");
     LLVMBuildRet(builder, tmp);
-    LLVMDumpModule(module);
+    if (get_print_ir())
+        LLVMDumpModule(module);
 
     char* triple = "wasm32-unknown-unknown";
     LLVMTargetRef target = LLVMGetTargetFromName("wasm32");
@@ -95,7 +96,8 @@ test_llvm_native()
     LLVMValueRef arg[] = { LLVMConstInt(LLVMInt32Type(), 0, 0) };
     LLVMBuildCall2(builder2, exit_type, exit_func, arg, 1, "");
     LLVMBuildUnreachable(builder2);
-    LLVMDumpModule(module);
+    if (get_print_ir())
+        LLVMDumpModule(module);
 
     char* triple = LLVMGetDefaultTargetTriple();
     LLVMTargetRef t = NULL;
@@ -135,6 +137,10 @@ main(const int argc, char** argv)
         log_error("Usage: %s <file>", argv[0]);
         exit(1);
     }
+    parse_commandline_options(argc, &argv);
+    char* c = get_input();
+    log_debug("%s", c);
+    char* input = get_input();
     bool no_parse;
     char* x;
     env_arg_str("NO_PARSE", x, 0) if (x != NULL && strcmp(x, "yes") == 0)
@@ -145,7 +151,7 @@ main(const int argc, char** argv)
     {
         no_parse = false;
     }
-    BENCH_TIMER_SETUP FILE* f = fopen(argv[1], "r");
+    BENCH_TIMER_SETUP FILE* f = fopen(input, "r");
     if (f == NULL) {
         log_error("Cannot open %s, exiting", argv[1]);
         exit(1);

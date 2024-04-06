@@ -20,16 +20,23 @@ cc_import(
     hdrs = ["lib/stb_ds.h"],
 )
 
+cc_library(
+	name = "env_args",
+	srcs = ["lib/env_args.cpp"],
+	hdrs = ["lib/env_args.h"],
+	copts = ["-std=c++20", "-fno-rtti"],
+	deps = select({
+        "@bazel_tools//src/conditions:darwin_x86_64": ["@darwin-amd64//:llvm"],
+        "@bazel_tools//src/conditions:linux_aarch64": ["@linux-aarch64//:llvm"],
+        "@bazel_tools//src/conditions:linux_x86_64": ["@linux-amd64//:llvm"],
+        "@bazel_tools//src/conditions:linux_riscv64": ["@linux-riscv64//:llvm"],
+        "@bazel_tools//src/conditions:windows_x64": ["@windows-amd64//:llvm"],
+    }, no_match_error = "not supported os")
+)
+
 cc_binary(
     name = "kapuc",
     srcs = [
-        "lib/env_args.h",
-        "lib/log.c",
-        "lib/log.h",
-        "lib/sds.c",
-        "lib/sds.h",
-        "lib/sdsalloc.h",
-        "lib/stb_ds.h",
         "src/kapuc/helper.h",
         "src/kapuc/lex.c",
         "src/kapuc/lex.h",
@@ -44,6 +51,7 @@ cc_binary(
         "log",
         "sds",
         "stb_ds",
+	"env_args"
     ] + select({
         "@bazel_tools//src/conditions:darwin_x86_64": ["@darwin-amd64//:llvm"],
         "@bazel_tools//src/conditions:linux_aarch64": ["@linux-aarch64//:llvm"],
