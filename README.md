@@ -1,5 +1,10 @@
 # Kapuc
 
 - install bazel/bazelisk
-- use `bazelisk run :refresh_compile_commands` or `bazelisk run --define use_system_libgccjit=true :refresh_compile_commands` for system libgccjit to generate `compile_commands.json`
-- `bazelisk build //:kapuc --define use_system_libgccjit=true` if you already have libgccjit installed (should come with gcc?)
+- use `bazel run :refresh_compile_commands` to generate `compile_commands.json` for autocomplete.
+- `bazel build //:kapuc` to build the binary, it should be at bazel-bin/kapuc.
+
+## Current Issues
+- Windows
+  - Probably have an linking issues on build, no testing were done on Windows.
+  - Cannot be built with `cl.exe` (Visual Studio C Compiler), please use Cygwin if you are on Windows or use WSL.
