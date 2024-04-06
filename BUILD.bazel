@@ -1,6 +1,5 @@
 # BUILD bagel file
 
-# TODO: make libgccjit build script into bagel file
 cc_library(
     name = "sds",
     srcs = ["lib/sds.c"],
