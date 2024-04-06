@@ -1,18 +1,5 @@
 # BUILD bagel file
 
-# TODO: make libgccjit build script into bagel file
-cc_import(
-    name = "libgccjit",
-    hdrs = ["install/include/libgccjit.h"],
-    shared_library = "install/lib/libgccjit.so.0",
-    system_provided = 0,
-)
-
-config_setting(
-    name = "use_system_libgccjit",
-    values = {"define": "use_system_libgccjit=true"},
-)
-
 cc_library(
     name = "sds",
     srcs = ["lib/sds.c"],
@@ -34,35 +21,7 @@ cc_import(
 )
 
 cc_binary(
-    name = "kapuc_with_system_libgccjit",
-    srcs = [
-        "lib/env_args.h",
-        "lib/log.c",
-        "lib/log.h",
-        "lib/sds.c",
-        "lib/sds.h",
-        "lib/sdsalloc.h",
-        "lib/stb_ds.h",
-        "src/kapuc/helper.h",
-        "src/kapuc/lex.c",
-        "src/kapuc/lex.h",
-        "src/kapuc/main.c",
-        "src/kapuc/parse.c",
-        "src/kapuc/parse.h",
-    ],
-    copts = [
-        "-O2",
-    ],
-    linkopts = ["-lgccjit"],
-    deps = [
-        "log",
-        "sds",
-        "stb_ds",
-    ],
-)
-
-cc_binary(
-    name = "kapuc_without_system_libgccjit",
+    name = "kapuc",
     srcs = [
         "lib/env_args.h",
         "lib/log.c",
@@ -85,44 +44,20 @@ cc_binary(
         "log",
         "sds",
         "stb_ds",
-        ":libgccjit",
-    ],
+    ] + select({
+        "@bazel_tools//src/conditions:darwin_x86_64": ["@darwin-amd64//:llvm"],
+        "@bazel_tools//src/conditions:linux_aarch64": ["@linux-aarch64//:llvm"],
+        "@bazel_tools//src/conditions:linux_x86_64": ["@linux-amd64//:llvm"],
+        "@bazel_tools//src/conditions:linux_riscv64": ["@linux-riscv64//:llvm"],
+        "@bazel_tools//src/conditions:windows_x64": ["@windows-amd64//:llvm"],
+    }, no_match_error = "not supported os"),
 )
 
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
 refresh_compile_commands(
-    name = "refresh_compile_commands_system_libgccjit",
-    targets = {
-        "//:kapuc": "--define use_system_libgccjit=true",
-    },
-)
-
-refresh_compile_commands(
-    name = "refresh_compile_commands_local_libgccjit",
+    name = "refresh_compile_commands",
     targets = {
         "//:kapuc": "",
     },
-)
-
-alias(
-    name = "kapuc",
-    actual = select({
-        ":use_system_libgccjit": ":kapuc_with_system_libgccjit",
-        "//conditions:default": ":kapuc_without_system_libgccjit",
-    }),
-)
-
-alias(
-    name = "refresh_compile_commands",
-    actual = select({
-        ":use_system_libgccjit": ":refresh_compile_commands_system_libgccjit",
-        "//conditions:default": ":refresh_compile_commands_local_libgccjit",
-    }),
-)
-
-filegroup(
-    name = "clang_tidy_config",
-    srcs = [".clang-tidy"],
-    visibility = ["//visibility:public"],
 )

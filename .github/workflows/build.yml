@@ -1,0 +1,31 @@
+name: Bazel Build
+
+on:
+ push:
+    branches:
+      - main
+ pull_request:
+    branches:
+      - main
+
+jobs:
+ build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+    - uses: actions/checkout@v3
+      #    - name: Set up Cygwin
+      #      uses: egor-tensin/setup-cygwin@v4
+      #      if: matrix.os == 'windows-latest'
+      #      with:
+      #        packages: gcc-g++
+    - name: Set up Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: ${{ github.workflow }}-${{ github.matrix.os }}
+        repository-cache: true
+    - name: Build with Bazel
+      run: bazel build :kapuc
