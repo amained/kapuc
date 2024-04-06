@@ -21,7 +21,7 @@ static cl::opt<std::string> output("o",
                                    cl::cat(CompilerCategory));
 static cl::opt<OLevel> OptsLevel(
   cl::desc("Optimization Level:"),
-  cl::values(clEnumVal(g, "No optimization, debug info"),
+  cl::values(clEnumValN(None, "g", "No optimization, debug info"),
              clEnumVal(O1, "No optimization"),
              clEnumVal(O2, "Default optimization"),
              clEnumVal(O3, "Aggressive optimization")),

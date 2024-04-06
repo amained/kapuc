@@ -32,7 +32,7 @@ enum FOptimizeOptions
 
 enum OLevel
 {
-    g,
+    None,
     O1,
     O2,
     O3
