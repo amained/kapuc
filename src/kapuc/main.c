@@ -138,9 +138,9 @@ main(const int argc, char** argv)
         exit(1);
     }
     parse_commandline_options(argc, &argv);
-    char* c = get_input();
-    log_debug("%s", c);
+    log_debug("Optimization level: %d", get_OptsLevel());
     char* input = get_input();
+    log_debug("Input file: %s", input);
     bool no_parse;
     char* x;
     env_arg_str("NO_PARSE", x, 0) if (x != NULL && strcmp(x, "yes") == 0)
