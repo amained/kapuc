@@ -1,3 +1,5 @@
+# test
+
 import aa::bb;
 @test( aa, bb )
 pub func n(a::b b): d::<e, f>::g {
@@ -6,6 +8,8 @@ pub func n(a::b b): d::<e, f>::g {
 }
 func printf(&char format, ..): u16;
 func aa(u8::<b> bb, char s):u8 {
-  char b = 2;
+  &char b = "asdfasdfasdfasdfasdf";
+  i8 c = -12!;
+  u32 d = 120_000_000; # separater _ can be at anywhere
   return b as u8;
 }
