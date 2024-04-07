@@ -1,0 +1,27 @@
+top_level_stmt ::= space (funct space)*
+funct ::= pub_avaliable func_declaration (space ';' | space_required block)
+func_declaration ::= 'func' space_required identifier space '(' space param_list? space ')' space ':' space type
+pub_avaliable ::= ('pub' space_required)?
+block ::= '{' space (level_stmt space)* space '}' | level_stmt
+level_stmt ::= (expression | assign_stmt | return_stmt) ';'
+assign_stmt ::= type_decl space '=' space expression
+return_stmt ::= 'return' space_required expression
+expression ::= equ_expression
+equ_expression ::= add_expression (space ( '==' | '!=' ) space add_expression)*
+add_expression ::= mul_expression (space ( '+' | '-' ) space mul_expression)*
+mul_expression ::= atom (space ('*' | '/') space atom)*
+atom ::= prefix atom | atom space_required 'as' space_required type | array | identifier | rational_number | (atom path) | '(' space expression space ')'
+prefix ::= '-' | '+' | '*' | '&'
+space ::= (' ' | '\n' | '\t')*
+space_required ::= (' ' | '\n' | '\t')+
+path ::= '::' (atom | type_snek) | type_snek
+type ::= atom
+type_list ::= type (space ',' space type)*
+exp_list ::= expression (space ',' space expression)*
+param_list ::= (type_decl (space ',' space type_decl)* (',' space '..')?) | '..'
+type_decl ::= type space_required identifier
+array ::= '[' space exp_list? space ']'
+identifier ::= #'[a-zA-Z_]+' (identifier | number)?
+number ::= #'[0-9]'+
+rational_number ::= number ('.' number)?
+type_snek ::= '<' space type_list space '>'
