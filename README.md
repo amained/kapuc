@@ -9,10 +9,16 @@ General programming language for low-level performant program.
 ## Development instruction
 - Generate `compile_commands.json` with `bazel run :refresh_compile_commands` for autocomplete
 - Look at
+  - `spec.md` for the spec of the language
+  - (TODO) `docs/**/*.md` for documentation of libraries and the compiler
   - `lib/env_args.{cpp,h}` for arguments of the program (kapuc compiler)
   - `src/kapuc` for the compiler stage
     - `src/kapuc/{lex,parse}.{c,h}` for syntax/parser
   - (TODO) `src/kapu/` for the main package manager/build system
+- Before making pr, make sure
+  - You run `clang-format` with all of the files you modified
+  - You make sure the build is successful
+  - (TODO) check clang-tidy with `clang-tidy --warnings-as-errors=* ./src/kapuc/*.{c,h} ./lib/env_args.{cpp,h}`
 
 ## Known issues
 - Windows
