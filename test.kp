@@ -1,6 +1,11 @@
-# return [36, 69, 7 + 2, (5 * 3 - 2) / 4, 5, ..];
-# func printf(format: &char, ..): void {
-#     @_c_call("printf", format, ..);
-# }
-func main(): int {
+import aa::bb;
+@test( aa, bb )
+pub func n(a::b b): d::<e, f>::g {
+    char _ = e(    d.e.f() + e as i32, f);
+    return g(f);
+}
+func printf(&char format, ..): u16;
+func aa(u8::<b> bb, char s):u8 {
+  char b = 2;
+  return b as u8;
 }
