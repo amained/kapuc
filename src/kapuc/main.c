@@ -164,13 +164,15 @@ main(const int argc, char** argv)
     }
     log_debug("lexing finished: got %d tokens", arrlen(tokens));
 #ifdef SUPER_AGGRESSIVE_DEBUG
-    for (int i = 0; i < arrlen(tokens); i++)
-        log_debug("tokens %d is %d: %s (pos: %ld-%ld)",
+    for (int i = 0; i < arrlen(tokens); i++){
+      log_debug("tokens %d is %d: %s (pos: %ld-%ld)",
                   i + 1,
                   tokens[i].t,
                   tokens[i].s,
                   tokens[i].start + 1,
                   tokens[i].end + 1);
+    }
+        
 #endif
     if (!no_parse) {
         log_debug("parsing started");

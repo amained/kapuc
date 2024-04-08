@@ -24,7 +24,7 @@ cc_library(
 	name = "env_args",
 	srcs = ["lib/env_args.cpp"],
 	hdrs = ["lib/env_args.h"],
-	copts = ["-std=c++20", "-fno-rtti"],
+	copts = ["-std=c++2a", "-fno-rtti"],
 	deps = select({
         "@bazel_tools//src/conditions:darwin_x86_64": ["@darwin-amd64//:llvm"],
         "@bazel_tools//src/conditions:linux_aarch64": ["@linux-aarch64//:llvm"],

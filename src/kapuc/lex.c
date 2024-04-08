@@ -39,9 +39,6 @@
     TOK_SYMBOL(pToks, word, "else", ELSE, p, 4)                                \
     TOK_SYMBOL(pToks, word, "let", LET, p, 3)                                  \
     TOK_SYMBOL(pToks, word, "const", CONST, p, 5)                              \
-    TOK_SYMBOL(pToks, word, "if", IF, p, 2)                                    \
-    TOK_SYMBOL(pToks, word, "else", ELSE, p, 4)                                \
-    TOK_SYMBOL(pToks, word, "elif", ELIF, p, 4)                                \
     TOK_SYMBOL(pToks, word, "true", TRUE, p, 4)                                \
     TOK_SYMBOL(pToks, word, "false", FALSE, p, 5)
 
