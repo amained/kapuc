@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "log.h": "c",
-        "sds.h": "c",
-        "stb_ds.h": "c"
-    }
-}
