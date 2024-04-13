@@ -134,8 +134,8 @@ build_nth_entire_expression(struct parser* p,
                 new_tree.type = BINARY_OP;
                 new_tree.binop_tree.type = generate_type_from_op(op.t);
                 new_tree.binop_tree.left = malloc(sizeof(struct parse_tree));
-                memcpy(
-                  new_tree.binop_tree.left, tree, sizeof(struct parse_tree));
+                memmove(
+                       new_tree.binop_tree.left, tree, sizeof(struct parse_tree)); // this is so horrible i should meg myself now
                 new_tree.binop_tree.right = right;
                 *tree = new_tree;
             } else
