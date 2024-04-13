@@ -26,6 +26,7 @@ enum TOK_TYPE
     LBRACKET,
     RBRACKET,
     COLON,
+    DOUBLE_COLON,
     COMMA,
     SEMICOLON,
     DOT,
@@ -39,10 +40,10 @@ enum TOK_TYPE
     EQ,
     COMP_EQ,
     COMP_NEQ,
-    COMP_LEQ,
-    COMP_MEQ,
-    COMP_MT,
-    COMP_LT,
+    LA_EQ,
+    RA_EQ,
+    RIGHT_ANGLE,
+    LEFT_ANGLE,
     T_ERR
 };
 

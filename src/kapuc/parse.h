@@ -4,77 +4,75 @@
 #include "lib/sds.h"
 #include <stdbool.h>
 
-enum ASTType
+enum parse_tree_type
 {
-    // data
-    D_INT,
-    D_IDENT,
-    D_STRING,
-    D_TRUE,
-    D_FALSE,
+    // atom
+    INT,
+    VARIABLE,
     // expr
-    E_UNARY,
-    E_LIST,
-    E_DOTS,
-    // statements
-    S_LET,
-    S_RETURN,
-    S_COFFEE,
-    S_IF,
-    S_ELIF,
-    S_ELSE,
-    // main tree stuff
-    B_FILE_TREE,
-    B_FUNC,
-    B_STMTS,
-    B_ERR // for error on the main tree
+    UNARY_OP,  // !: 0
+    BINARY_OP, // +: 0, -: 1, *: 2, /: 3, ==: 4, !=: 5, <=: 6, >=: 7
+    PTR_REF,
+    PTR_DEREF
 };
 
-struct __attribute__((packed)) AST
+struct TREE_INT
+{
+    int value;
+};
+
+struct TREE_VARIABLE
 {
     sds value;
-    uint8_t sub_value;
-    struct AST* nodes;
-    enum ASTType node_type;
 };
 
-struct __attribute__((aligned)) Parser
+struct TREE_BINARY_OP
 {
-    struct TOK* tokens;
-    int pos;
-    char* filename;
-    bool error;
+    int8_t type;
+    struct parse_tree* left;
+    struct parse_tree* right;
 };
 
-struct AST
-parse_tree(struct Parser* p);
+struct TREE_UNARY_OP
+{
+    int type;
+    struct parse_tree* value;
+};
+
+struct TREE_PTR_REF
+{
+    struct parse_tree* value;
+};
+
+struct TREE_PTR_DEREF
+{
+    struct parse_tree* value;
+};
+
+struct parse_tree
+{
+    enum parse_tree_type type;
+    union
+    {
+        struct TREE_INT int_tree;
+        struct TREE_VARIABLE var_tree;
+        struct TREE_BINARY_OP binop_tree;
+    };
+};
+
+struct parser
+{
+    struct TOK* tokens; // sds
+    unsigned int pos;
+};
+
+bool
+build_atom(struct parser* p, struct parse_tree* tree);
+
+bool
+build_entire_expression(struct parser* p, struct parse_tree* tree);
 
 void
-free_parser(struct Parser* p);
-
-void
-free_tree(struct AST* tree);
-
-void
-print_tree(struct AST* tree, int levels);
-
-#ifdef SHIT_IS_IN_TESTING
-
-struct AST
-parse_expr(struct Parser* p);
-struct AST
-parse_atom(struct Parser* p);
-struct AST
-parse_type_decl(struct Parser* p, struct AST(f)(struct Parser*));
-struct AST
-parse_statement(struct Parser* p);
-struct AST
-parse_func_decl(struct Parser* p);
-struct AST
-parse_func(struct Parser* p);
-struct AST
-parse_block(struct Parser* p);
-
-#endif
+print_entire_expression(struct parse_tree* tree);
 
 #endif // KAPUC_PARSE_H

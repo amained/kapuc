@@ -176,13 +176,16 @@ main(const int argc, char** argv)
 #endif
     if (!no_parse) {
         log_debug("parsing started");
-        struct Parser p = { .tokens = tokens, .pos = 0, .filename = argv[1] };
-        if (p.error) {
-            log_error("failed parsing");
-            exit(1);
+        struct parser p = { tokens, 0 };
+        struct parse_tree tree;
+        if (!build_entire_expression(&p, &tree))
+            log_debug("we fucked");
+        else {
+            log_debug("parsing finished");
+            print_entire_expression(&tree);
+            putchar('\n');
+            log_debug("tree type: %d", tree.type);
         }
-        log_debug("parsing finished");
-        free_parser(&p);
     }
     log_debug("testing llvm");
     // initialize all

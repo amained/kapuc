@@ -56,8 +56,9 @@ lex(FILE* stream)
         if ((c >= 97 && c <= 122) || c == '_') {
             long start = ftell(stream) - 1;
             sds word = sdsnew((const char*)&c);
-            while ((c = fgetc(stream)) != EOF &&
-                   ((c >= 97 && c <= 122) || c == '_')) {
+            while (
+              (c = fgetc(stream)) != EOF &&
+              ((c >= 97 && c <= 122) || c == '_' || (c >= 48 && c <= 57))) {
                 word = sdscatlen(word, &c, 1);
             }
             if (c == EOF) {
@@ -75,10 +76,11 @@ lex(FILE* stream)
         else if (c == '#') {
             while ((c = fgetc(stream)) != EOF && c != '\n')
                 ;
-        } else if (c >= 48 && c <= 57) {
+        } else if ((c >= 48 && c <= 57)) {
             long start = ftell(stream);
             sds word = sdsnew((const char*)&c);
-            while ((c = fgetc(stream)) != EOF && c >= 48 && c <= 57) {
+            while ((c = fgetc(stream)) != EOF &&
+                   ((c >= 48 && c <= 57) || c == '_')) {
                 word = sdscatlen(word, &c, 1);
             }
             if (c == EOF) {
@@ -118,9 +120,8 @@ lex(FILE* stream)
                     break;
                 }
                 case ':': {
-                    TOK_PUSH(
-                      NULL, pToks, COLON, ftell(stream) - 1, ftell(stream) - 1)
-                    break;
+                    TOK_MULTICHAR_SYMBOL(
+                      ':', COLON, DOUBLE_COLON, ftell(stream));
                 }
                 case ',': {
                     TOK_PUSH(
@@ -202,10 +203,11 @@ lex(FILE* stream)
                     TOK_MULTICHAR_SYMBOL('=', EQ, COMP_EQ, ftell(stream));
                 }
                 case '<': {
-                    TOK_MULTICHAR_SYMBOL('=', COMP_LT, COMP_LEQ, ftell(stream));
+                    TOK_MULTICHAR_SYMBOL('=', LEFT_ANGLE, LA_EQ, ftell(stream));
                 }
                 case '>': {
-                    TOK_MULTICHAR_SYMBOL('=', COMP_MT, COMP_MEQ, ftell(stream));
+                    TOK_MULTICHAR_SYMBOL(
+                      '=', RIGHT_ANGLE, RA_EQ, ftell(stream));
                 }
                 case '!': {
                     TOK_MULTICHAR_SYMBOL('!', EXCLAM, COMP_NEQ, ftell(stream));
