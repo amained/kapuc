@@ -12,6 +12,7 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
+#include "llvm-c/Linker.h"
 #include <stdio.h>
 
 // Testing LLVM, incase something f'ed up
@@ -121,6 +122,7 @@ test_llvm_native()
     // NOTE: This does not link! This just build object file (ELF in linux (and
     // *nix?), idk what in Windows) To link on linux, specify -lc and
     // -dynamic-linker to ld
+    // TODO: link it with LLVM
     LLVMTargetMachineEmitToFile(
       machine, module, "test.o", LLVMObjectFile, NULL);
     LLVMDisposeMessage(triple);

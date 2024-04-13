@@ -18,7 +18,7 @@ enum parse_tree_type
 
 struct TREE_INT
 {
-    int value;
+    long value;
 };
 
 struct TREE_VARIABLE
@@ -26,30 +26,30 @@ struct TREE_VARIABLE
     sds value;
 };
 
-struct TREE_BINARY_OP
+struct __attribute__((packed)) TREE_BINARY_OP
 {
     int8_t type;
     struct parse_tree* left;
     struct parse_tree* right;
 };
 
-struct TREE_UNARY_OP
+struct __attribute__((packed)) TREE_UNARY_OP
 {
     int type;
     struct parse_tree* value;
 };
 
-struct TREE_PTR_REF
+struct __attribute__((packed)) TREE_PTR_REF
 {
     struct parse_tree* value;
 };
 
-struct TREE_PTR_DEREF
+struct __attribute__((packed)) TREE_PTR_DEREF
 {
     struct parse_tree* value;
 };
 
-struct parse_tree
+struct __attribute__((packed)) parse_tree
 {
     enum parse_tree_type type;
     union
@@ -65,9 +65,6 @@ struct parser
     struct TOK* tokens; // sds
     unsigned int pos;
 };
-
-bool
-build_atom(struct parser* p, struct parse_tree* tree);
 
 bool
 build_entire_expression(struct parser* p, struct parse_tree* tree);

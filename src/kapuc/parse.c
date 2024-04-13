@@ -17,13 +17,19 @@ get_cur_tok(struct parser* p, struct TOK* tok)
 }
 
 static bool
-get_next_tok(struct parser* p, struct TOK* tok)
+get_next_tok_by_n(struct parser* p, struct TOK* tok, int n)
 {
-    if (arrlen(p->tokens) > p->pos + 1) {
-        tok = &p->tokens[p->pos + 1];
+    if (arrlen(p->tokens) > p->pos + n) {
+        *tok = p->tokens[p->pos + n];
         return true;
     }
     return false;
+}
+
+static inline bool
+get_next_tok(struct parser* p, struct TOK* tok)
+{
+  return get_next_tok_by_n(p, tok, 1);
 }
 
 static bool
@@ -36,7 +42,7 @@ advance(struct parser* p)
     return false;
 }
 
-bool
+static bool
 build_atom(struct parser* p, struct parse_tree* tree)
 {
     struct TOK t = {};
@@ -54,6 +60,7 @@ build_atom(struct parser* p, struct parse_tree* tree)
                 return true;
             }
             case IDENT: {
+              // TODO: check for '.', '::', '()', etc. basically check for func call
                 tree->type = VARIABLE;
                 tree->var_tree.value = t.s;
                 advance(p);
@@ -158,7 +165,7 @@ print_entire_expression(struct parse_tree* tree)
     }
     switch (tree->type) {
         case INT: {
-            printf("%d", tree->int_tree.value);
+            printf("%ld", tree->int_tree.value);
             return;
         }
         case VARIABLE: {
