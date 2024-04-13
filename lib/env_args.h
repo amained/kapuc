@@ -20,7 +20,7 @@
     bool get_##opt_name_##opt_smallname();
 
 void
-parse_commandline_options();
+parse_commandline_options(int argc, char*** argv);
 
 enum FOptimizeOptions
 {
