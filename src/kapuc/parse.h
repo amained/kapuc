@@ -39,6 +39,8 @@ struct __attribute__((packed)) TREE_UNARY_OP
     struct parse_tree* value;
 };
 
+// TODO: merge this with parse_tree, maybe we don't have to do this at all, just
+// have a flag on parse_tree that says if we ref or deref.
 struct __attribute__((packed)) TREE_PTR_REF
 {
     struct parse_tree* value;
@@ -57,6 +59,7 @@ struct __attribute__((packed)) parse_tree
         struct TREE_INT int_tree;
         struct TREE_VARIABLE var_tree;
         struct TREE_BINARY_OP binop_tree;
+        struct TREE_PTR_REF ref_tree;
     };
 };
 
@@ -71,5 +74,8 @@ build_entire_expression(struct parser* p, struct parse_tree* tree);
 
 void
 print_entire_expression(struct parse_tree* tree);
+
+void
+free_parse_tree(struct parse_tree* tree);
 
 #endif // KAPUC_PARSE_H

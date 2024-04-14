@@ -12,7 +12,6 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
-#include "llvm-c/Linker.h"
 #include <stdio.h>
 
 // Testing LLVM, incase something f'ed up
@@ -179,14 +178,15 @@ main(const int argc, char** argv)
     if (!no_parse) {
         log_debug("parsing started");
         struct parser p = { tokens, 0 };
-        struct parse_tree tree;
-        if (!build_entire_expression(&p, &tree))
+        struct parse_tree* tree = malloc(sizeof(struct parse_tree));
+        if (!build_entire_expression(&p, tree))
             log_debug("we fucked");
         else {
             log_debug("parsing finished");
-            print_entire_expression(&tree);
+            print_entire_expression(tree);
             putchar('\n');
-            log_debug("tree type: %d", tree.type);
+            log_debug("tree type: %d", tree->type);
+            free_parse_tree(tree);
         }
     }
     log_debug("testing llvm");
@@ -208,9 +208,10 @@ main(const int argc, char** argv)
     // for (int i = 0; i < arrlen(trees); i++) {
     // free_ast(&trees[i]);
     // }
-    // for (int i = 0; i < arrlen(tokens); i++) {
-    //    sdsfree(tokens[i].s);
-    // }
+    for (int i = 0; i < arrlen(tokens); i++) {
+        sdsfree(tokens[i].s);
+    }
+    arrfree(tokens);
     // arrfree(trees);
     fclose(f);
 }

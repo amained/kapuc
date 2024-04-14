@@ -4,6 +4,7 @@
 #include "lib/sds.h"
 #include "lib/stb_ds.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 static bool
@@ -29,7 +30,7 @@ get_next_tok_by_n(struct parser* p, struct TOK* tok, int n)
 static inline bool
 get_next_tok(struct parser* p, struct TOK* tok)
 {
-  return get_next_tok_by_n(p, tok, 1);
+    return get_next_tok_by_n(p, tok, 1);
 }
 
 static bool
@@ -60,11 +61,24 @@ build_atom(struct parser* p, struct parse_tree* tree)
                 return true;
             }
             case IDENT: {
-              // TODO: check for '.', '::', '()', etc. basically check for func call
+                // TODO: check for '.', '::', '()', etc. basically check for
+                // func call
                 tree->type = VARIABLE;
                 tree->var_tree.value = t.s;
                 advance(p);
                 return true;
+            }
+            case AMPERSAND: {
+                struct TOK t2 = {};
+                if (get_next_tok(p, &t2) &&
+                    (t2.t == NUM || t2.t == IDENT || t2.t == AMPERSAND)) {
+                    advance(p);
+                    tree->type = PTR_REF;
+                    tree->ref_tree.value = malloc(sizeof(struct parse_tree));
+                    build_atom(p, tree->ref_tree.value);
+                    return true;
+                }
+                return false;
             }
             default: {
                 return false;
@@ -105,6 +119,7 @@ generate_type_from_op(enum TOK_TYPE t)
             return -1;
     }
 }
+
 static bool
 build_nth_entire_expression(struct parser* p,
                             struct parse_tree* tree,
@@ -134,8 +149,10 @@ build_nth_entire_expression(struct parser* p,
                 new_tree.type = BINARY_OP;
                 new_tree.binop_tree.type = generate_type_from_op(op.t);
                 new_tree.binop_tree.left = malloc(sizeof(struct parse_tree));
-                memmove(
-                       new_tree.binop_tree.left, tree, sizeof(struct parse_tree)); // this is so horrible i should meg myself now
+                memmove(new_tree.binop_tree.left,
+                        tree,
+                        sizeof(struct parse_tree)); // this is so horrible i
+                                                    // should meg myself now
                 new_tree.binop_tree.right = right;
                 *tree = new_tree;
             } else
@@ -168,6 +185,11 @@ print_entire_expression(struct parse_tree* tree)
             printf("%ld", tree->int_tree.value);
             return;
         }
+        case PTR_REF: {
+            putchar('&');
+            print_entire_expression(tree->ref_tree.value);
+            return;
+        }
         case VARIABLE: {
             printf("%s", tree->var_tree.value);
             return;
@@ -185,4 +207,30 @@ print_entire_expression(struct parse_tree* tree)
             return;
         }
     }
+}
+
+void
+free_parse_tree(struct parse_tree* tree)
+{
+    if (tree == NULL)
+        return;
+    switch (tree->type) {
+        case VARIABLE: {
+            // sdsfree(tree->var_tree.value);
+            // not freed here because we do that later at cleanup in main.
+            break;
+        }
+        case PTR_REF: {
+            free_parse_tree(tree->ref_tree.value);
+            break;
+        }
+        case BINARY_OP: {
+            free_parse_tree(tree->binop_tree.left);
+            free_parse_tree(tree->binop_tree.right);
+            break;
+        }
+        default:
+            break;
+    }
+    free(tree);
 }
