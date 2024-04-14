@@ -13,7 +13,7 @@ enum parse_tree_type
     UNARY_OP,  // !: 0
     BINARY_OP, // +: 0, -: 1, *: 2, /: 3, ==: 4, !=: 5, <=: 6, >=: 7
     PTR_REF,
-    PTR_DEREF
+    PTR_DEREF,
 };
 
 struct TREE_INT
@@ -51,6 +51,16 @@ struct __attribute__((packed)) TREE_PTR_DEREF
     struct parse_tree* value;
 };
 
+// NOTE: this is linked list for a lot of reasons
+// - stmt can be add and remove anytime
+// - stmt can be move to point at other place
+// - block can cease to exist
+struct __attribute__((packed)) TREE_LEVEL_STMT
+{
+    struct parse_tree* statement;
+    struct parse_tree** next;
+};
+
 struct __attribute__((packed)) parse_tree
 {
     enum parse_tree_type type;
@@ -60,6 +70,7 @@ struct __attribute__((packed)) parse_tree
         struct TREE_VARIABLE var_tree;
         struct TREE_BINARY_OP binop_tree;
         struct TREE_PTR_REF ref_tree;
+        struct TREE_PTR_DEREF deref_tree;
     };
 };
 

@@ -43,6 +43,9 @@ advance(struct parser* p)
     return false;
 }
 
+bool
+build_entire_expression(struct parser* p, struct parse_tree* tree);
+
 static bool
 build_atom(struct parser* p, struct parse_tree* tree)
 {
@@ -60,6 +63,18 @@ build_atom(struct parser* p, struct parse_tree* tree)
                 advance(p);
                 return true;
             }
+            case LPAREN: {
+                advance(p);
+                if (build_entire_expression(p, tree)) {
+                    if (get_cur_tok(p, &t) && t.t == RPAREN)
+                        advance(p);
+                    else
+                        return false;
+                    return true;
+                }
+                log_debug("failed to build PARENTHESIS expression");
+                return false;
+            }
             case IDENT: {
                 // TODO: check for '.', '::', '()', etc. basically check for
                 // func call
@@ -75,6 +90,18 @@ build_atom(struct parser* p, struct parse_tree* tree)
                     advance(p);
                     tree->type = PTR_REF;
                     tree->ref_tree.value = malloc(sizeof(struct parse_tree));
+                    build_atom(p, tree->ref_tree.value);
+                    return true;
+                }
+                return false;
+            }
+            case STAR: {
+                struct TOK t2 = {};
+                if (get_next_tok(p, &t2) &&
+                    (t2.t == NUM || t2.t == IDENT || t2.t == AMPERSAND)) {
+                    advance(p);
+                    tree->type = PTR_DEREF;
+                    tree->deref_tree.value = malloc(sizeof(struct parse_tree));
                     build_atom(p, tree->ref_tree.value);
                     return true;
                 }
@@ -138,7 +165,9 @@ build_nth_entire_expression(struct parser* p,
             if (build_atom(p, right)) {
                 struct TOK next_op;
                 if (get_cur_tok(p, &next_op)) {
-                    log_debug("get next_op at pos %d", p->pos);
+                    log_debug("get next_op at tok pos %d, real pos %d",
+                              p->pos,
+                              next_op.start);
                     if (calc_precedence(next_op.t) > prec) {
                         if (!build_nth_entire_expression(p, right, prec + 1))
                             return false;
@@ -190,6 +219,11 @@ print_entire_expression(struct parse_tree* tree)
             print_entire_expression(tree->ref_tree.value);
             return;
         }
+        case PTR_DEREF: {
+            putchar('*');
+            print_entire_expression(tree->ref_tree.value);
+            return;
+        }
         case VARIABLE: {
             printf("%s", tree->var_tree.value);
             return;
@@ -222,6 +256,10 @@ free_parse_tree(struct parse_tree* tree)
         }
         case PTR_REF: {
             free_parse_tree(tree->ref_tree.value);
+            break;
+        }
+        case PTR_DEREF: {
+            free_parse_tree(tree->deref_tree.value);
             break;
         }
         case BINARY_OP: {
