@@ -1,4 +1,5 @@
 #include "lex.h"
+
 #include "lib/log.h"
 #include "lib/sds.h"
 #include "lib/stb_ds.h"
@@ -91,135 +92,119 @@ lex(FILE* stream)
             TOK_PUSH(word, pToks, NUM, start, ftell(stream) - 1);
         } else {
             switch (c) {
-                case '(': {
-                    TOK_PUSH(
-                      NULL, pToks, LPAREN, ftell(stream) - 1, ftell(stream) - 1)
+            case '(': {
+                TOK_PUSH(
+                  NULL, pToks, LPAREN, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case ')': {
+                TOK_PUSH(
+                  NULL, pToks, RPAREN, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '{': {
+                TOK_PUSH(
+                  NULL, pToks, LBRACE, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '}': {
+                TOK_PUSH(
+                  NULL, pToks, RBRACE, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case ';': {
+                TOK_PUSH(
+                  NULL, pToks, SEMICOLON, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case ':': {
+                TOK_MULTICHAR_SYMBOL(':', COLON, DOUBLE_COLON, ftell(stream));
+            }
+            case ',': {
+                TOK_PUSH(
+                  NULL, pToks, COMMA, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '+': {
+                TOK_PUSH(
+                  NULL, pToks, PLUS, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '-': {
+                TOK_PUSH(
+                  NULL, pToks, MINUS, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '*': {
+                TOK_PUSH(
+                  NULL, pToks, STAR, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '/': {
+                TOK_PUSH(
+                  NULL, pToks, SLASH, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '[': {
+                TOK_PUSH(
+                  NULL, pToks, LBRACKET, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case ']': {
+                TOK_PUSH(
+                  NULL, pToks, RBRACKET, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '&': {
+                TOK_PUSH(
+                  NULL, pToks, AMPERSAND, ftell(stream) - 1, ftell(stream) - 1)
+                break;
+            }
+            case '"': {
+                sds word = sdsempty();
+                long start = ftell(stream) - 1;
+                while ((c = fgetc(stream)) != EOF && c != '"')
+                    word = sdscatlen(word, &c, 1);
+                if (c == EOF) {
+                    TOK_PUSH(word, pToks, STRING, start, ftell(stream) - 1);
                     break;
                 }
-                case ')': {
-                    TOK_PUSH(
-                      NULL, pToks, RPAREN, ftell(stream) - 1, ftell(stream) - 1)
+                TOK_PUSH(word, pToks, STRING, start, ftell(stream) - 1)
+                break;
+            }
+            case '@': {
+                sds word = sdsempty();
+                long start = ftell(stream) - 1;
+                while ((c = fgetc(stream)) != EOF &&
+                       ((c >= 97 && c <= 122) || c == '_')) {
+                    word = sdscatlen(word, &c, 1);
+                }
+                if (c == EOF)
                     break;
-                }
-                case '{': {
-                    TOK_PUSH(
-                      NULL, pToks, LBRACE, ftell(stream) - 1, ftell(stream) - 1)
-                    break;
-                }
-                case '}': {
-                    TOK_PUSH(
-                      NULL, pToks, RBRACE, ftell(stream) - 1, ftell(stream) - 1)
-                    break;
-                }
-                case ';': {
-                    TOK_PUSH(NULL,
-                             pToks,
-                             SEMICOLON,
-                             ftell(stream) - 1,
-                             ftell(stream) - 1)
-                    break;
-                }
-                case ':': {
-                    TOK_MULTICHAR_SYMBOL(
-                      ':', COLON, DOUBLE_COLON, ftell(stream));
-                }
-                case ',': {
-                    TOK_PUSH(
-                      NULL, pToks, COMMA, ftell(stream) - 1, ftell(stream) - 1)
-                    break;
-                }
-                case '+': {
-                    TOK_PUSH(
-                      NULL, pToks, PLUS, ftell(stream) - 1, ftell(stream) - 1)
-                    break;
-                }
-                case '-': {
-                    TOK_PUSH(
-                      NULL, pToks, MINUS, ftell(stream) - 1, ftell(stream) - 1)
-                    break;
-                }
-                case '*': {
-                    TOK_PUSH(
-                      NULL, pToks, STAR, ftell(stream) - 1, ftell(stream) - 1)
-                    break;
-                }
-                case '/': {
-                    TOK_PUSH(
-                      NULL, pToks, SLASH, ftell(stream) - 1, ftell(stream) - 1)
-                    break;
-                }
-                case '[': {
-                    TOK_PUSH(NULL,
-                             pToks,
-                             LBRACKET,
-                             ftell(stream) - 1,
-                             ftell(stream) - 1)
-                    break;
-                }
-                case ']': {
-                    TOK_PUSH(NULL,
-                             pToks,
-                             RBRACKET,
-                             ftell(stream) - 1,
-                             ftell(stream) - 1)
-                    break;
-                }
-                case '&': {
-                    TOK_PUSH(NULL,
-                             pToks,
-                             AMPERSAND,
-                             ftell(stream) - 1,
-                             ftell(stream) - 1)
-                    break;
-                }
-                case '"': {
-                    sds word = sdsempty();
-                    long start = ftell(stream) - 1;
-                    while ((c = fgetc(stream)) != EOF && c != '"') {
-                        word = sdscatlen(word, &c, 1);
-                    }
-                    if (c == EOF) {
-                        TOK_PUSH(word, pToks, STRING, start, ftell(stream) - 1);
-                        break;
-                    }
-                    TOK_PUSH(word, pToks, STRING, start, ftell(stream) - 1)
-                    break;
-                }
-                case '@': {
-                    sds word = sdsempty();
-                    long start = ftell(stream) - 1;
-                    while ((c = fgetc(stream)) != EOF &&
-                           ((c >= 97 && c <= 122) || c == '_')) {
-                        word = sdscatlen(word, &c, 1);
-                    }
-                    if (c == EOF) {
-                        break;
-                    }
-                    fseek(stream, -1L, SEEK_CUR);
-                    TOK_PUSH(word, pToks, COFFEE, start, ftell(stream) - 1);
-                    break;
-                }
-                case '=': {
-                    TOK_MULTICHAR_SYMBOL('=', EQ, COMP_EQ, ftell(stream));
-                }
-                case '<': {
-                    TOK_MULTICHAR_SYMBOL('=', LEFT_ANGLE, LA_EQ, ftell(stream));
-                }
-                case '>': {
-                    TOK_MULTICHAR_SYMBOL(
-                      '=', RIGHT_ANGLE, RA_EQ, ftell(stream));
-                }
-                case '!': {
-                    TOK_MULTICHAR_SYMBOL('!', EXCLAM, COMP_NEQ, ftell(stream));
-                }
-                case '.': {
-                    TOK_MULTICHAR_SYMBOL('.', DOT, DOTDOT, ftell(stream));
-                }
-                default: {
-                    log_error(
-                      "Expected symbol, got \"%c\" at %d", c, ftell(stream));
-                    arrput(pToks, (struct TOK){ .t = T_ERR });
-                }
+                fseek(stream, -1L, SEEK_CUR);
+                TOK_PUSH(word, pToks, COFFEE, start, ftell(stream) - 1);
+                break;
+            }
+            case '=': {
+                TOK_MULTICHAR_SYMBOL('=', EQ, COMP_EQ, ftell(stream));
+            }
+            case '<': {
+                TOK_MULTICHAR_SYMBOL('=', LEFT_ANGLE, LA_EQ, ftell(stream));
+            }
+            case '>': {
+                TOK_MULTICHAR_SYMBOL('=', RIGHT_ANGLE, RA_EQ, ftell(stream));
+            }
+            case '!': {
+                TOK_MULTICHAR_SYMBOL('!', EXCLAM, COMP_NEQ, ftell(stream));
+            }
+            case '.': {
+                TOK_MULTICHAR_SYMBOL('.', DOT, DOTDOT, ftell(stream));
+            }
+            default: {
+                log_error(
+                  "Expected symbol, got \"%c\" at %d", c, ftell(stream));
+                arrput(pToks, (struct TOK){ .t = T_ERR });
+            }
             }
         }
     }

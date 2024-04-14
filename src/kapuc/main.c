@@ -1,5 +1,6 @@
 #include "helper.h"
 #include "lib/log.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -9,9 +10,11 @@
 #include "lib/env_args.h"
 #include "lib/stb_ds.h"
 #include "parse.h"
+
 #include "llvm-c/Core.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
+
 #include <stdio.h>
 
 // Testing LLVM, incase something f'ed up
@@ -62,9 +65,9 @@ test_llvm_wasm()
     LLVMDisposeTargetMachine(machine);
     LLVMDisposeBuilder(builder);
     LLVMContextDispose(
-      c); // what is this consistency, also this needs to be disposed AFTER
-          // LLVMTargetMachineEmitToFile() or else we won't have the context in
-          // the module I think?
+      c); // what is this consistency, also this needs to be
+          // disposed AFTER LLVMTargetMachineEmitToFile() or else
+          // we won't have the context in the module I think?
 }
 
 void
@@ -144,14 +147,12 @@ main(const int argc, char** argv)
     log_debug("Input file: %s", input);
     bool no_parse;
     char* x;
-    env_arg_str("NO_PARSE", x, 0) if (x != NULL && strcmp(x, "yes") == 0)
-    {
+    env_arg_str("NO_PARSE", x, 0);
+    if (x != NULL && strcmp(x, "yes") == 0)
         no_parse = true;
-    }
     else
-    {
         no_parse = false;
-    }
+
     BENCH_TIMER_SETUP FILE* f = fopen(input, "r");
     if (f == NULL) {
         log_error("Cannot open %s, exiting", argv[1]);
@@ -208,9 +209,8 @@ main(const int argc, char** argv)
     // for (int i = 0; i < arrlen(trees); i++) {
     // free_ast(&trees[i]);
     // }
-    for (int i = 0; i < arrlen(tokens); i++) {
+    for (int i = 0; i < arrlen(tokens); i++)
         sdsfree(tokens[i].s);
-    }
     arrfree(tokens);
     // arrfree(trees);
     fclose(f);

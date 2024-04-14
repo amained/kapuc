@@ -1,9 +1,10 @@
 #include "parse.h"
+
 #include "lex.h"
 #include "lib/log.h"
 #include "lib/sds.h"
 #include "lib/stb_ds.h"
-#include <stdint.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -52,64 +53,64 @@ build_atom(struct parser* p, struct parse_tree* tree)
     struct TOK t = {};
     if (get_cur_tok(p, &t)) {
         switch (t.t) {
-            case NUM: {
-                tree->type = INT;
-                // TODO: The lexer get the float here too? not sure. maybe we
-                // should make the lexer just get the number don't care about
-                // float?
-                tree->int_tree.value =
-                  atol(t.s); // NOLINT(cert-err34-c) atol works here because we
-                             // know it is an integer
-                advance(p);
+        case NUM: {
+            tree->type = INT;
+            // TODO: The lexer get the float here too? not sure. maybe we
+            // should make the lexer just get the number don't care about
+            // float?
+            tree->int_tree.value =
+              atol(t.s); // NOLINT(cert-err34-c) atol works here
+                         // because we know it is an integer
+            advance(p);
+            return true;
+        }
+        case LPAREN: {
+            advance(p);
+            if (build_entire_expression(p, tree)) {
+                if (get_cur_tok(p, &t) && t.t == RPAREN)
+                    advance(p);
+                else
+                    return false;
                 return true;
             }
-            case LPAREN: {
+            log_debug("failed to build PARENTHESIS expression");
+            return false;
+        }
+        case IDENT: {
+            // TODO: check for '.', '::', '()', etc. basically check for
+            // func call
+            tree->type = VARIABLE;
+            tree->var_tree.value = t.s;
+            advance(p);
+            return true;
+        }
+        case AMPERSAND: {
+            struct TOK t2 = {};
+            if (get_next_tok(p, &t2) &&
+                (t2.t == NUM || t2.t == IDENT || t2.t == AMPERSAND)) {
                 advance(p);
-                if (build_entire_expression(p, tree)) {
-                    if (get_cur_tok(p, &t) && t.t == RPAREN)
-                        advance(p);
-                    else
-                        return false;
-                    return true;
-                }
-                log_debug("failed to build PARENTHESIS expression");
-                return false;
-            }
-            case IDENT: {
-                // TODO: check for '.', '::', '()', etc. basically check for
-                // func call
-                tree->type = VARIABLE;
-                tree->var_tree.value = t.s;
-                advance(p);
+                tree->type = PTR_REF;
+                tree->ref_tree.value = malloc(sizeof(struct parse_tree));
+                build_atom(p, tree->ref_tree.value);
                 return true;
             }
-            case AMPERSAND: {
-                struct TOK t2 = {};
-                if (get_next_tok(p, &t2) &&
-                    (t2.t == NUM || t2.t == IDENT || t2.t == AMPERSAND)) {
-                    advance(p);
-                    tree->type = PTR_REF;
-                    tree->ref_tree.value = malloc(sizeof(struct parse_tree));
-                    build_atom(p, tree->ref_tree.value);
-                    return true;
-                }
-                return false;
+            return false;
+        }
+        case STAR: {
+            struct TOK t2 = {};
+            if (get_next_tok(p, &t2) &&
+                (t2.t == NUM || t2.t == IDENT || t2.t == AMPERSAND)) {
+                advance(p);
+                tree->type = PTR_DEREF;
+                tree->deref_tree.value = malloc(sizeof(struct parse_tree));
+                build_atom(p, tree->ref_tree.value);
+                return true;
             }
-            case STAR: {
-                struct TOK t2 = {};
-                if (get_next_tok(p, &t2) &&
-                    (t2.t == NUM || t2.t == IDENT || t2.t == AMPERSAND)) {
-                    advance(p);
-                    tree->type = PTR_DEREF;
-                    tree->deref_tree.value = malloc(sizeof(struct parse_tree));
-                    build_atom(p, tree->ref_tree.value);
-                    return true;
-                }
-                return false;
-            }
-            default: {
-                return false;
-            }
+            return false;
+        }
+        default: {
+            return false;
+        }
         }
     }
     return false;
@@ -119,14 +120,14 @@ static int8_t
 calc_precedence(enum TOK_TYPE t)
 {
     switch (t) {
-        case PLUS:
-        case MINUS:
-            return 1;
-        case STAR:
-        case SLASH:
-            return 2;
-        default:
-            return -1;
+    case PLUS:
+    case MINUS:
+        return 1;
+    case STAR:
+    case SLASH:
+        return 2;
+    default:
+        return -1;
     }
 }
 
@@ -134,16 +135,16 @@ static int8_t
 generate_type_from_op(enum TOK_TYPE t)
 {
     switch (t) {
-        case PLUS:
-            return 0;
-        case MINUS:
-            return 1;
-        case STAR:
-            return 2;
-        case SLASH:
-            return 3;
-        default:
-            return -1;
+    case PLUS:
+        return 0;
+    case MINUS:
+        return 1;
+    case STAR:
+        return 2;
+    case SLASH:
+        return 3;
+    default:
+        return -1;
     }
 }
 
@@ -210,36 +211,36 @@ print_entire_expression(struct parse_tree* tree)
         return;
     }
     switch (tree->type) {
-        case INT: {
-            printf("%ld", tree->int_tree.value);
-            return;
-        }
-        case PTR_REF: {
-            putchar('&');
-            print_entire_expression(tree->ref_tree.value);
-            return;
-        }
-        case PTR_DEREF: {
-            putchar('*');
-            print_entire_expression(tree->ref_tree.value);
-            return;
-        }
-        case VARIABLE: {
-            printf("%s", tree->var_tree.value);
-            return;
-        }
-        case BINARY_OP: {
-            printf("(%d ", tree->binop_tree.type);
-            print_entire_expression(tree->binop_tree.left);
-            putchar(' ');
-            print_entire_expression(tree->binop_tree.right);
-            putchar(')');
-            return;
-        }
-        default: {
-            printf("unknown");
-            return;
-        }
+    case INT: {
+        printf("%ld", tree->int_tree.value);
+        return;
+    }
+    case PTR_REF: {
+        putchar('&');
+        print_entire_expression(tree->ref_tree.value);
+        return;
+    }
+    case PTR_DEREF: {
+        putchar('*');
+        print_entire_expression(tree->ref_tree.value);
+        return;
+    }
+    case VARIABLE: {
+        printf("%s", tree->var_tree.value);
+        return;
+    }
+    case BINARY_OP: {
+        printf("(%d ", tree->binop_tree.type);
+        print_entire_expression(tree->binop_tree.left);
+        putchar(' ');
+        print_entire_expression(tree->binop_tree.right);
+        putchar(')');
+        return;
+    }
+    default: {
+        printf("unknown");
+        return;
+    }
     }
 }
 
@@ -249,26 +250,26 @@ free_parse_tree(struct parse_tree* tree)
     if (tree == NULL)
         return;
     switch (tree->type) {
-        case VARIABLE: {
-            // sdsfree(tree->var_tree.value);
-            // not freed here because we do that later at cleanup in main.
-            break;
-        }
-        case PTR_REF: {
-            free_parse_tree(tree->ref_tree.value);
-            break;
-        }
-        case PTR_DEREF: {
-            free_parse_tree(tree->deref_tree.value);
-            break;
-        }
-        case BINARY_OP: {
-            free_parse_tree(tree->binop_tree.left);
-            free_parse_tree(tree->binop_tree.right);
-            break;
-        }
-        default:
-            break;
+    case VARIABLE: {
+        // sdsfree(tree->var_tree.value);
+        // not freed here because we do that later at cleanup in main.
+        break;
+    }
+    case PTR_REF: {
+        free_parse_tree(tree->ref_tree.value);
+        break;
+    }
+    case PTR_DEREF: {
+        free_parse_tree(tree->deref_tree.value);
+        break;
+    }
+    case BINARY_OP: {
+        free_parse_tree(tree->binop_tree.left);
+        free_parse_tree(tree->binop_tree.right);
+        break;
+    }
+    default:
+        break;
     }
     free(tree);
 }

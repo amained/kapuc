@@ -2,6 +2,7 @@
 #define KAPUC_PARSE_H
 
 #include "lib/sds.h"
+
 #include <stdbool.h>
 
 enum parse_tree_type
