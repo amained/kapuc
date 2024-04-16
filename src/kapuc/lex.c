@@ -126,24 +126,16 @@ lex(FILE* stream)
                 break;
             }
             case '+': {
-                TOK_PUSH(
-                  NULL, pToks, PLUS, ftell(stream) - 1, ftell(stream) - 1)
-                break;
+                TOK_MULTICHAR_SYMBOL('=', PLUS, PLUS_EQ, ftell(stream));
             }
             case '-': {
-                TOK_PUSH(
-                  NULL, pToks, MINUS, ftell(stream) - 1, ftell(stream) - 1)
-                break;
+                TOK_MULTICHAR_SYMBOL('=', MINUS, MINUS_EQ, ftell(stream));
             }
             case '*': {
-                TOK_PUSH(
-                  NULL, pToks, STAR, ftell(stream) - 1, ftell(stream) - 1)
-                break;
+                TOK_MULTICHAR_SYMBOL('=', STAR, MULT_EQ, ftell(stream));
             }
             case '/': {
-                TOK_PUSH(
-                  NULL, pToks, SLASH, ftell(stream) - 1, ftell(stream) - 1)
-                break;
+                TOK_MULTICHAR_SYMBOL('=', SLASH, DIV_EQ, ftell(stream));
             }
             case '[': {
                 TOK_PUSH(

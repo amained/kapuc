@@ -1,6 +1,6 @@
 {
     let std::c_types::int8_t x = 0;
-    x == 2;
+    x *= 2;
     return 0;
     return 0;
     return 0;

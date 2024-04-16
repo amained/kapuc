@@ -172,9 +172,15 @@ calc_precedence(enum TOK_TYPE t)
     case STAR:
     case SLASH:
         return 2;
+    case PLUS_EQ:
+    case MINUS_EQ:
+        return 3;
+    case MULT_EQ:
+    case DIV_EQ:
+        return 4;
     case COMP_EQ:
     case COMP_NEQ:
-        return 3;
+        return 5;
     default:
         return -1;
     }
@@ -196,6 +202,14 @@ generate_type_from_op(enum TOK_TYPE t)
         return 4;
     case COMP_NEQ:
         return 5;
+    case PLUS_EQ:
+        return 6;
+    case MINUS_EQ:
+        return 7;
+    case MULT_EQ:
+        return 8;
+    case DIV_EQ:
+        return 9;
     default:
         return -1;
     }
@@ -375,7 +389,7 @@ void
 print_entire_expression(struct parse_tree* tree)
 {
     if (tree == NULL) {
-      fputs("NUL", stdout);
+        fputs("NUL", stdout);
         return;
     }
     switch (tree->type) {
@@ -423,7 +437,7 @@ print_entire_expression(struct parse_tree* tree)
         printf("stmts: {");
         print_entire_expression(tree->level_stmts_tree.statement);
         if (tree->level_stmts_tree.next != NULL) {
-          fputs("->", stdout);
+            fputs("->", stdout);
             print_entire_expression(tree->level_stmts_tree.next);
         }
         putchar('}');
@@ -432,8 +446,12 @@ print_entire_expression(struct parse_tree* tree)
     case TYPE_TRAIL: {
         print_entire_expression(tree->trail.current);
         switch (tree->trail.trail_type) {
-        case 0: {putchar('-');}
-        case 1: {fputs("::", stdout);}
+        case 0: {
+            putchar('-');
+        }
+        case 1: {
+            fputs("::", stdout);
+        }
         }
         print_entire_expression(tree->trail.next);
         return;
