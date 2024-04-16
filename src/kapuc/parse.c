@@ -129,6 +129,7 @@ build_atom(struct parser* p, struct parse_tree* tree)
                 log_debug("so true!");
                 struct parse_tree new_tree;
                 new_tree.type = TYPE_TRAIL;
+                new_tree.trail.trail_type = 0;
                 new_tree.trail.current = malloc(sizeof(struct parse_tree));
                 memmove(new_tree.trail.current,
                         tree,
@@ -137,6 +138,20 @@ build_atom(struct parser* p, struct parse_tree* tree)
                 build_atom(p, new_tree.trail.next);
                 *tree = new_tree;
             }
+            case DOUBLE_COLON: {
+                advance(p);
+                struct parse_tree new_tree;
+                new_tree.type = TYPE_TRAIL;
+                new_tree.trail.trail_type = 1;
+                new_tree.trail.current = malloc(sizeof(struct parse_tree));
+                memmove(new_tree.trail.current,
+                        tree,
+                        sizeof(struct parse_tree)); // megmove count: 3
+                new_tree.trail.next = malloc(sizeof(struct parse_tree));
+                build_atom(p, new_tree.trail.next);
+                *tree = new_tree;
+            }
+
             default: {
                 return true; // some foreign shit we don't have to handle
             }
@@ -360,7 +375,7 @@ void
 print_entire_expression(struct parse_tree* tree)
 {
     if (tree == NULL) {
-        printf("NUL");
+      fputs("NUL", stdout);
         return;
     }
     switch (tree->type) {
@@ -408,7 +423,7 @@ print_entire_expression(struct parse_tree* tree)
         printf("stmts: {");
         print_entire_expression(tree->level_stmts_tree.statement);
         if (tree->level_stmts_tree.next != NULL) {
-            printf("->");
+          fputs("->", stdout);
             print_entire_expression(tree->level_stmts_tree.next);
         }
         putchar('}');
@@ -416,7 +431,10 @@ print_entire_expression(struct parse_tree* tree)
     }
     case TYPE_TRAIL: {
         print_entire_expression(tree->trail.current);
-        putchar('.');
+        switch (tree->trail.trail_type) {
+        case 0: {putchar('-');}
+        case 1: {fputs("::", stdout);}
+        }
         print_entire_expression(tree->trail.next);
         return;
     }
