@@ -338,15 +338,36 @@ build_block_statement(struct parser* p, struct parse_tree* tree)
             tree->type = IFS;
             tree->ifs_tree.condition = malloc(sizeof(struct parse_tree));
             if (build_entire_expression(p, tree->ifs_tree.condition)) {
-              tree->ifs_tree.value = malloc(sizeof(struct parse_tree));
-              if (build_block(p, tree->ifs_tree.value)) {
-                return true;
-              }
+                tree->ifs_tree.value = malloc(sizeof(struct parse_tree));
+                if (build_block(p, tree->ifs_tree.value))
+                    return true;
             }
             return false;
         }
+        case SEMICOLON: {
+            advance(p);
+            log_debug("excess semicolon??"); // currently excess semis still a problem
+            return false;
+        }
         default: {
-            // expression?
+            // expression? assignment?
+            if (t.t == IDENT && get_next_tok(p, &t) && t.t == EQ) {
+                // assignment
+                get_cur_tok(p, &t);
+                tree->type = STMT_ASSIGNMENT;
+                tree->assign_tree.name = t.s;
+                tree->assign_tree.type = NULL;
+                advance(p);
+                advance(p);
+                tree->assign_tree.value = malloc(sizeof(struct parse_tree));
+                if (build_entire_expression(p, tree->assign_tree.value)) {
+                    if (get_cur_tok(p, &t) && t.t == SEMICOLON) {
+                        advance(p);
+                        return true;
+                    }
+                }
+                return false;
+            }
             if (build_entire_expression(p, tree)) {
                 if (get_cur_tok(p, &t) && t.t == SEMICOLON) {
                     advance(p);
