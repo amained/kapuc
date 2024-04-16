@@ -20,6 +20,7 @@ enum parse_tree_type
     EMPTY_LVL_STMTS,
     STMT_ASSIGNMENT,
     STMT_RETURN,
+    IFS,
     // type_expr
     TYPE_TRAIL
 };
@@ -91,6 +92,14 @@ struct __attribute__((packed)) TREE_RETURN
     struct parse_tree* value;
 };
 
+// i love linked list
+struct __attribute__((packed)) TREE_IFS
+{
+    struct parse_tree* condition;
+    struct parse_tree* value;
+    struct parse_tree* next;
+};
+
 // NOTE: this is linked list for a lot of reasons
 // - stmt can be add and remove anytime
 // - stmt can be move to point at other place
@@ -114,6 +123,7 @@ struct __attribute__((packed)) parse_tree
         struct TREE_LEVEL_STMTS level_stmts_tree;
         struct TREE_ASSIGNMENT assign_tree;
         struct TREE_RETURN return_tree;
+        struct TREE_IFS ifs_tree;
         struct TREE_TYPE_TRAIL trail;
     };
 };

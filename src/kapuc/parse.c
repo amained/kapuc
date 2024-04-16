@@ -6,6 +6,7 @@
 #include "lib/stb_ds.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 static bool
 get_cur_tok(struct parser* p, struct TOK* tok)
@@ -61,9 +62,12 @@ build_small_atom(struct parser* p, struct parse_tree* tree)
             // TODO: The lexer get the float here too? not sure. maybe we
             // should make the lexer just get the number don't care about
             // float?
+
+            log_debug("ok??");
             tree->int_tree.value =
               atol(t.s); // NOLINT(cert-err34-c) atol works here
                          // because we know it is an integer
+            log_debug("%ld", tree->int_tree.value);
             advance(p);
             return true;
         }
@@ -137,6 +141,7 @@ build_atom(struct parser* p, struct parse_tree* tree)
                 new_tree.trail.next = malloc(sizeof(struct parse_tree));
                 build_atom(p, new_tree.trail.next);
                 *tree = new_tree;
+                return true;
             }
             case DOUBLE_COLON: {
                 advance(p);
@@ -150,8 +155,8 @@ build_atom(struct parser* p, struct parse_tree* tree)
                 new_tree.trail.next = malloc(sizeof(struct parse_tree));
                 build_atom(p, new_tree.trail.next);
                 *tree = new_tree;
+                return true;
             }
-
             default: {
                 return true; // some foreign shit we don't have to handle
             }
@@ -159,7 +164,7 @@ build_atom(struct parser* p, struct parse_tree* tree)
         }
         return true;
     }
-    return false;
+    return true;
 }
 
 static int8_t
@@ -266,7 +271,7 @@ build_entire_expression(struct parser* p, struct parse_tree* tree)
 {
     if (build_atom(p, tree))
         return build_nth_entire_expression(p, tree, 0);
-    log_debug("atom failed to build");
+    log_debug("atom failed to build, pos: %d", p->pos);
     return false;
 }
 
@@ -325,6 +330,18 @@ build_block_statement(struct parser* p, struct parse_tree* tree)
                     advance(p);
                     return true;
                 }
+            }
+            return false;
+        }
+        case IF: {
+            advance(p);
+            tree->type = IFS;
+            tree->ifs_tree.condition = malloc(sizeof(struct parse_tree));
+            if (build_entire_expression(p, tree->ifs_tree.condition)) {
+              tree->ifs_tree.value = malloc(sizeof(struct parse_tree));
+              if (build_block(p, tree->ifs_tree.value)) {
+                return true;
+              }
             }
             return false;
         }
