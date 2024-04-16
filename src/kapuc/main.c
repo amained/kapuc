@@ -180,7 +180,7 @@ main(const int argc, char** argv)
         log_debug("parsing started");
         struct parser p = { tokens, 0 };
         struct parse_tree* tree = malloc(sizeof(struct parse_tree));
-        if (!build_entire_expression(&p, tree))
+        if (!build_block(&p, tree))
             log_debug("we fucked");
         else {
             log_debug("parsing finished");

@@ -6,7 +6,6 @@
 #include "lib/stb_ds.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 
 static bool
 get_cur_tok(struct parser* p, struct TOK* tok)
@@ -48,7 +47,11 @@ bool
 build_entire_expression(struct parser* p, struct parse_tree* tree);
 
 static bool
-build_atom(struct parser* p, struct parse_tree* tree)
+build_atom(struct parser* p, struct parse_tree* tree);
+
+// basically build atom without suffix (type props, factorial, etc)
+static inline bool
+build_small_atom(struct parser* p, struct parse_tree* tree)
 {
     struct TOK t = {};
     if (get_cur_tok(p, &t)) {
@@ -77,8 +80,6 @@ build_atom(struct parser* p, struct parse_tree* tree)
             return false;
         }
         case IDENT: {
-            // TODO: check for '.', '::', '()', etc. basically check for
-            // func call
             tree->type = VARIABLE;
             tree->var_tree.value = t.s;
             advance(p);
@@ -116,6 +117,36 @@ build_atom(struct parser* p, struct parse_tree* tree)
     return false;
 }
 
+static bool
+build_atom(struct parser* p, struct parse_tree* tree)
+{
+    if (build_small_atom(p, tree)) {
+        struct TOK t;
+        if (get_cur_tok(p, &t)) {
+            switch (t.t) {
+            case DOT: {
+                advance(p);
+                log_debug("so true!");
+                struct parse_tree new_tree;
+                new_tree.type = TYPE_TRAIL;
+                new_tree.trail.current = malloc(sizeof(struct parse_tree));
+                memmove(new_tree.trail.current,
+                        tree,
+                        sizeof(struct parse_tree)); // megmove count: 2
+                new_tree.trail.next = malloc(sizeof(struct parse_tree));
+                build_atom(p, new_tree.trail.next);
+                *tree = new_tree;
+            }
+            default: {
+                return true; // some foreign shit we don't have to handle
+            }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 static int8_t
 calc_precedence(enum TOK_TYPE t)
 {
@@ -126,6 +157,9 @@ calc_precedence(enum TOK_TYPE t)
     case STAR:
     case SLASH:
         return 2;
+    case COMP_EQ:
+    case COMP_NEQ:
+        return 3;
     default:
         return -1;
     }
@@ -143,6 +177,10 @@ generate_type_from_op(enum TOK_TYPE t)
         return 2;
     case SLASH:
         return 3;
+    case COMP_EQ:
+        return 4;
+    case COMP_NEQ:
+        return 5;
     default:
         return -1;
     }
@@ -203,11 +241,126 @@ build_entire_expression(struct parser* p, struct parse_tree* tree)
     return false;
 }
 
+static inline bool
+build_assignment_expression(struct parser* p, struct parse_tree* tree)
+{
+    struct TOK t;
+    tree->assign_tree.type = malloc(sizeof(struct parse_tree));
+    if (build_atom(p, tree->assign_tree.type)) {
+        if (get_cur_tok(p, &t) && t.t == IDENT) {
+            advance(p);
+            tree->assign_tree.name = t.s;
+            if (get_cur_tok(p, &t) && t.t == SEMICOLON)
+                return true;
+            // stmt, check for equal sign
+            if (t.t == EQ) {
+                advance(p);
+                tree->assign_tree.value = malloc(sizeof(struct parse_tree));
+                if (build_entire_expression(p, tree->assign_tree.value)) {
+                    if (get_cur_tok(p, &t) && t.t == SEMICOLON) {
+                        advance(p);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// basically the level_stmt
+bool
+build_block_statement(struct parser* p, struct parse_tree* tree)
+{
+    struct TOK t;
+    if (get_cur_tok(p, &t)) {
+        switch (t.t) {
+        case CONST: {
+            advance(p);
+            tree->type = STMT_ASSIGNMENT;
+            tree->assign_tree.isConst = true;
+            return build_assignment_expression(p, tree);
+        }
+        case LET: {
+            advance(p);
+            tree->type = STMT_ASSIGNMENT;
+            tree->assign_tree.isConst = false;
+            return build_assignment_expression(p, tree);
+        }
+        case RETURN: {
+            advance(p);
+            tree->type = STMT_RETURN;
+            tree->return_tree.value = malloc(sizeof(struct parse_tree));
+            if (build_entire_expression(p, tree->return_tree.value)) {
+                if (get_cur_tok(p, &t) && t.t == SEMICOLON) {
+                    advance(p);
+                    return true;
+                }
+            }
+            return false;
+        }
+        default: {
+            // expression?
+            if (build_entire_expression(p, tree)) {
+                if (get_cur_tok(p, &t) && t.t == SEMICOLON) {
+                    advance(p);
+                    return true;
+                }
+            }
+        }
+        }
+        return false;
+    }
+    return false;
+}
+
+bool
+build_block(struct parser* p, struct parse_tree* tree)
+{
+    // incase of one statement, we just return the statement
+    // if there's more, we will return tree_level_stmts
+    struct TOK t;
+    if (get_cur_tok(p, &t)) {
+        switch (t.t) {
+        case LBRACE: {
+            advance(p);
+            if (get_cur_tok(p, &t) && t.t == RBRACE) {
+                // empty statement, retreat;
+                tree->type = EMPTY_LVL_STMTS;
+                return true;
+            }
+            tree->type = LVL_STMTS;
+            // FIXME: VERY UNOPTIMIZED, THIS SHOULD BE REMODELED
+            // unfortunately my brain suck at thinking better method
+            // maybe reverse linked list?? that would suck to get first
+            // statement
+            while (get_cur_tok(p, &t) && t.t != RBRACE) {
+                tree->type = LVL_STMTS;
+                tree->level_stmts_tree.statement =
+                  malloc(sizeof(struct parse_tree));
+                if (!build_block_statement(p, tree->level_stmts_tree.statement))
+                    return false;
+                tree->level_stmts_tree.next = NULL;
+                if (get_cur_tok(p, &t) && t.t != RBRACE) {
+                    tree->level_stmts_tree.next =
+                      malloc(sizeof(struct parse_tree));
+                    tree = tree->level_stmts_tree.next;
+                }
+            }
+            return true;
+        }
+        default:
+            return build_block_statement(p, tree); // foreign stuff
+        }
+    }
+    return false;
+}
+
 void
 print_entire_expression(struct parse_tree* tree)
 {
     if (tree == NULL) {
-        printf("wtf??");
+        printf("NUL");
         return;
     }
     switch (tree->type) {
@@ -237,8 +390,38 @@ print_entire_expression(struct parse_tree* tree)
         putchar(')');
         return;
     }
+    case STMT_ASSIGNMENT: {
+        printf("%s type: ", tree->assign_tree.isConst ? "const" : "let");
+        print_entire_expression(tree->assign_tree.type);
+        printf(" value: ");
+        print_entire_expression(tree->assign_tree.value);
+        putchar(';');
+        return;
+    }
+    case STMT_RETURN: {
+        printf("return ");
+        print_entire_expression(tree->return_tree.value);
+        putchar(';');
+        return;
+    }
+    case LVL_STMTS: {
+        printf("stmts: {");
+        print_entire_expression(tree->level_stmts_tree.statement);
+        if (tree->level_stmts_tree.next != NULL) {
+            printf("->");
+            print_entire_expression(tree->level_stmts_tree.next);
+        }
+        putchar('}');
+        return;
+    }
+    case TYPE_TRAIL: {
+        print_entire_expression(tree->trail.current);
+        putchar('.');
+        print_entire_expression(tree->trail.next);
+        return;
+    }
     default: {
-        printf("unknown");
+        printf("unknown %d", tree->type);
         return;
     }
     }
@@ -266,6 +449,20 @@ free_parse_tree(struct parse_tree* tree)
     case BINARY_OP: {
         free_parse_tree(tree->binop_tree.left);
         free_parse_tree(tree->binop_tree.right);
+        break;
+    }
+    case TYPE_TRAIL: {
+        free_parse_tree(tree->trail.current);
+        free_parse_tree(tree->trail.next);
+        break;
+    }
+    case STMT_ASSIGNMENT: {
+        free_parse_tree(tree->assign_tree.type);
+        free_parse_tree(tree->assign_tree.value);
+        break;
+    }
+    case STMT_RETURN: {
+        free_parse_tree(tree->return_tree.value);
         break;
     }
     default:

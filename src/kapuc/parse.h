@@ -15,6 +15,13 @@ enum parse_tree_type
     BINARY_OP, // +: 0, -: 1, *: 2, /: 3, ==: 4, !=: 5, <=: 6, >=: 7
     PTR_REF,
     PTR_DEREF,
+    // stmt
+    LVL_STMTS,
+    EMPTY_LVL_STMTS,
+    STMT_ASSIGNMENT,
+    STMT_RETURN,
+    // type_expr
+    TYPE_TRAIL
 };
 
 struct TREE_INT
@@ -25,6 +32,25 @@ struct TREE_INT
 struct TREE_VARIABLE
 {
     sds value;
+};
+
+// with no props, we could just return props
+// in normal situation with just 1 props it should be cur: type, prop: type
+// when multiple props, change to linked list:
+// cur: type, prop: -> (type_with_props: type, props: -> ...)
+struct TREE_TYPE_WITH_PROPS
+{
+    struct parse_tree* cur;
+    struct parse_tree* prop;
+};
+
+// this is not just for type, but for using value of struct and a lot of stuff
+// that is linked-list-able and relate to value
+struct TREE_TYPE_TRAIL
+{
+    int8_t trail_type; // 0: atom.atom, 1: atom::atom, others are reserved
+    struct parse_tree* current;
+    struct parse_tree* next;
 };
 
 struct __attribute__((packed)) TREE_BINARY_OP
@@ -52,14 +78,27 @@ struct __attribute__((packed)) TREE_PTR_DEREF
     struct parse_tree* value;
 };
 
+struct __attribute__((packed)) TREE_ASSIGNMENT
+{
+    struct parse_tree* type;
+    sds name;
+    bool isConst;
+    struct parse_tree* value;
+};
+
+struct __attribute__((packed)) TREE_RETURN
+{
+    struct parse_tree* value;
+};
+
 // NOTE: this is linked list for a lot of reasons
 // - stmt can be add and remove anytime
 // - stmt can be move to point at other place
 // - block can cease to exist
-struct __attribute__((packed)) TREE_LEVEL_STMT
+struct __attribute__((packed)) TREE_LEVEL_STMTS
 {
     struct parse_tree* statement;
-    struct parse_tree** next;
+    struct parse_tree* next;
 };
 
 struct __attribute__((packed)) parse_tree
@@ -72,6 +111,10 @@ struct __attribute__((packed)) parse_tree
         struct TREE_BINARY_OP binop_tree;
         struct TREE_PTR_REF ref_tree;
         struct TREE_PTR_DEREF deref_tree;
+        struct TREE_LEVEL_STMTS level_stmts_tree;
+        struct TREE_ASSIGNMENT assign_tree;
+        struct TREE_RETURN return_tree;
+        struct TREE_TYPE_TRAIL trail;
     };
 };
 
@@ -84,8 +127,14 @@ struct parser
 bool
 build_entire_expression(struct parser* p, struct parse_tree* tree);
 
+bool
+build_block_statement(struct parser* p, struct parse_tree* tree);
+
 void
 print_entire_expression(struct parse_tree* tree);
+
+bool
+build_block(struct parser* p, struct parse_tree* tree);
 
 void
 free_parse_tree(struct parse_tree* tree);
