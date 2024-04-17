@@ -5,6 +5,8 @@
 
 #include <stdbool.h>
 
+struct parse_tree;
+
 enum parse_tree_type
 {
     // atom
@@ -138,6 +140,31 @@ struct __attribute__((packed)) parse_tree
         struct TREE_TYPE_TRAIL trail;
     };
 };
+
+enum code_tree_type
+{
+    IMPORT,
+    FUNCTION,
+    TYPE, // type alias; type a = b<aa, bb>; or smth like this
+    STRUCT,
+    ENUM
+};
+
+// this is the full tree of the program, not just parts of it
+struct __attribute__((packed)) code_tree
+{
+    enum code_tree_type type;
+    union
+    {};
+};
+
+typedef struct code_tree* tree_ptr;
+#define T tree_ptr
+void
+tree_ptr_free(T*);
+T
+tree_ptr_copy(T*);
+#include "lib/ctl/vec.h"
 
 struct parser
 {

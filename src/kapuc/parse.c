@@ -7,6 +7,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+void
+type_free(tree_ptr* t){
+    // free_code_tree(*t);
+};
+tree_ptr
+type_copy(tree_ptr* t)
+{
+    return *t;
+};
 
 static bool
 get_cur_tok(struct parser* p, struct TOK* tok)
@@ -374,7 +383,8 @@ build_block_statement(struct parser* p, struct parse_tree* tree)
         }
         case SEMICOLON: {
             advance(p);
-            log_debug("excess semicolon??"); // currently excess semis still a problem
+            log_debug(
+              "excess semicolon??"); // currently excess semis still a problem
             return false;
         }
         default: {

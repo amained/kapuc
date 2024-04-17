@@ -10,6 +10,11 @@ cc_library(
 )
 
 cc_library(
+    name = "ctl",
+    srcs = glob(["lib/ctl/*.h"])
+)
+
+cc_library(
     name = "log",
     srcs = ["lib/log.c"],
     hdrs = ["lib/log.h"],
@@ -51,7 +56,8 @@ cc_binary(
         "log",
         "sds",
         "stb_ds",
-	"env_args"
+	"env_args",
+	"ctl"
     ] + select({
         "@bazel_tools//src/conditions:darwin_x86_64": ["@darwin-amd64//:llvm"],
         "@bazel_tools//src/conditions:linux_aarch64": ["@linux-aarch64//:llvm"],
