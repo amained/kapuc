@@ -185,6 +185,8 @@ calc_precedence(enum TOK_TYPE t)
         return 4;
     case COMP_EQ:
     case COMP_NEQ:
+    case LEFT_ANGLE:
+    case RIGHT_ANGLE:
         return 5;
     default:
         return -1;
@@ -207,14 +209,18 @@ generate_type_from_op(enum TOK_TYPE t)
         return 4;
     case COMP_NEQ:
         return 5;
-    case PLUS_EQ:
+    case LEFT_ANGLE:
         return 6;
-    case MINUS_EQ:
+    case RIGHT_ANGLE:
         return 7;
-    case MULT_EQ:
+    case PLUS_EQ:
         return 8;
-    case DIV_EQ:
+    case MINUS_EQ:
         return 9;
+    case MULT_EQ:
+        return 10;
+    case DIV_EQ:
+        return 11;
     default:
         return -1;
     }
@@ -344,6 +350,28 @@ build_block_statement(struct parser* p, struct parse_tree* tree)
             }
             return false;
         }
+        case FOR: {
+            advance(p);
+            tree->type = LOOP_FOR;
+            tree->loop_for_tree.start = malloc(sizeof(struct parse_tree));
+            if (build_block(p, tree->loop_for_tree.start)) {
+                tree->loop_for_tree.while_cond =
+                  malloc(sizeof(struct parse_tree));
+
+                if (build_block(p, tree->loop_for_tree.while_cond)) {
+                    tree->loop_for_tree.end = malloc(sizeof(struct parse_tree));
+
+                    if (build_block(p, tree->loop_for_tree.end)) {
+                        // condition parsing finished; build block
+                        tree->loop_for_tree.inside =
+                          malloc(sizeof(struct parse_tree));
+                        if (build_block(p, tree->loop_for_tree.inside))
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
         case SEMICOLON: {
             advance(p);
             log_debug("excess semicolon??"); // currently excess semis still a problem
@@ -446,7 +474,18 @@ print_entire_expression(struct parse_tree* tree)
         return;
     }
     case VARIABLE: {
-        printf("%s", tree->var_tree.value);
+        fputs(tree->var_tree.value, stdout);
+        return;
+    }
+    case LOOP_FOR: {
+        fputs("for ", stdout);
+        print_entire_expression(tree->loop_for_tree.start);
+        putchar(' ');
+        print_entire_expression(tree->loop_for_tree.while_cond);
+        putchar(' ');
+        print_entire_expression(tree->loop_for_tree.end);
+        fputs("->", stdout);
+        print_entire_expression(tree->loop_for_tree.inside);
         return;
     }
     case BINARY_OP: {
@@ -460,19 +499,19 @@ print_entire_expression(struct parse_tree* tree)
     case STMT_ASSIGNMENT: {
         printf("%s type: ", tree->assign_tree.isConst ? "const" : "let");
         print_entire_expression(tree->assign_tree.type);
-        printf(" value: ");
+        fputs(" value: ", stdout);
         print_entire_expression(tree->assign_tree.value);
         putchar(';');
         return;
     }
     case STMT_RETURN: {
-        printf("return ");
+        fputs("return ", stdout);
         print_entire_expression(tree->return_tree.value);
         putchar(';');
         return;
     }
     case LVL_STMTS: {
-        printf("stmts: {");
+        fputs("stmts: {", stdout);
         print_entire_expression(tree->level_stmts_tree.statement);
         if (tree->level_stmts_tree.next != NULL) {
             fputs("->", stdout);

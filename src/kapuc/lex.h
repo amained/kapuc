@@ -11,6 +11,7 @@ enum TOK_TYPE
     IF,
     ELSE,
     ELIF,
+    FOR,
     LET,
     CONST,
     IDENT,

@@ -21,6 +21,7 @@ enum parse_tree_type
     STMT_ASSIGNMENT,
     STMT_RETURN,
     IFS,
+    LOOP_FOR,
     // type_expr
     TYPE_TRAIL
 };
@@ -100,6 +101,15 @@ struct __attribute__((packed)) TREE_IFS
     struct parse_tree* next;
 };
 
+// all of this is a block
+struct __attribute__((packed)) TREE_FOR
+{
+    struct parse_tree* start;
+    struct parse_tree* while_cond;
+    struct parse_tree* end;
+    struct parse_tree* inside;
+};
+
 // NOTE: this is linked list for a lot of reasons
 // - stmt can be add and remove anytime
 // - stmt can be move to point at other place
@@ -124,6 +134,7 @@ struct __attribute__((packed)) parse_tree
         struct TREE_ASSIGNMENT assign_tree;
         struct TREE_RETURN return_tree;
         struct TREE_IFS ifs_tree;
+        struct TREE_FOR loop_for_tree;
         struct TREE_TYPE_TRAIL trail;
     };
 };

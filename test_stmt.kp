@@ -2,6 +2,7 @@
     let std::c_types::int8_t x = 0;
     if x == 1 
       return x == 2;
+    for let int n = 0; n < 3; n += 1; n;
     x = 2;
     return 0;
     return 1;
