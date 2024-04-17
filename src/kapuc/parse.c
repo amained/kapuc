@@ -524,10 +524,12 @@ print_entire_expression(struct parse_tree* tree)
         print_entire_expression(tree->trail.current);
         switch (tree->trail.trail_type) {
         case 0: {
-            putchar('-');
+            putchar('.');
+            break;
         }
         case 1: {
             fputs("::", stdout);
+            break;
         }
         }
         print_entire_expression(tree->trail.next);
