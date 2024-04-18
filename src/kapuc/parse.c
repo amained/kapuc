@@ -14,7 +14,7 @@ type_free(tree_ptr* t){
 tree_ptr
 type_copy(tree_ptr* t)
 {
-    return *t;
+  return *t; // it is a pointer to pointer anyways?
 };
 
 static bool
@@ -53,7 +53,7 @@ advance(struct parser* p)
     return false;
 }
 
-bool
+static bool
 build_entire_expression(struct parser* p, struct parse_tree* tree);
 
 static bool
@@ -281,7 +281,7 @@ build_nth_entire_expression(struct parser* p,
 }
 
 // basically the equ_expression rule
-bool
+static bool
 build_entire_expression(struct parser* p, struct parse_tree* tree)
 {
     if (build_atom(p, tree))

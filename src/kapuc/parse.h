@@ -150,12 +150,21 @@ enum code_tree_type
     ENUM
 };
 
-// this is the full tree of the program, not just parts of it
+struct CTREE_FUNCTION
+{
+    sds name;
+    struct parse_tree* type;
+    struct parse_tree* block;
+};
+
+// this is the part of the full tree of the program
 struct __attribute__((packed)) code_tree
 {
     enum code_tree_type type;
     union
-    {};
+    {
+        struct CTREE_FUNCTION* tree;
+    };
 };
 
 typedef struct code_tree* tree_ptr;
@@ -165,18 +174,13 @@ tree_ptr_free(T*);
 T
 tree_ptr_copy(T*);
 #include "lib/ctl/vec.h"
+// type of the full program tree will be vec_tree_ptr
 
 struct parser
 {
     struct TOK* tokens; // sds
     unsigned int pos;
 };
-
-bool
-build_entire_expression(struct parser* p, struct parse_tree* tree);
-
-bool
-build_block_statement(struct parser* p, struct parse_tree* tree);
 
 void
 print_entire_expression(struct parse_tree* tree);
