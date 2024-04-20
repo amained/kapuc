@@ -2,9 +2,14 @@
 General programming language for low-level performant program.
 
 ## Build instruction
-- install bazel/bazelisk
-- (not required, for development only) use `bazel run :refresh_compile_commands` to generate `compile_commands.json` for autocomplete.
-- `bazel build //:kapuc` to build the binary, it should be at bazel-bin/kapuc. (Note: the build name will be `unstable (unknown)`)
+- install llvm version >17.0
+  - ubuntu/debian users use this
+  ```bash
+  wget https://apt.llvm.org/llvm.sh
+  chmod +x llvm.sh
+  sudo ./llvm.sh 17
+  ```
+- install meson and ninja (```python3 -m pip install --user meson ninja```)
 
 ## Development instruction
 - Generate `compile_commands.json` with `bazel run :refresh_compile_commands` for autocomplete
@@ -16,7 +21,7 @@ General programming language for low-level performant program.
     - `src/kapuc/{lex,parse}.{c,h}` for syntax/parser
   - (TODO) `src/kapu/` for the main package manager/build system
 - Before making pr, make sure
-  - You run `clang-format` with all of the files you modified
+  - You run `clang-format` with all of the files you modified (or simpler, ```git clang-format --staged``` for staged changes)
   - You make sure the build is successful
   - (TODO) check clang-tidy with `clang-tidy --warnings-as-errors=* ./src/kapuc/*.{c,h} ./lib/env_args.{cpp,h}`
 
