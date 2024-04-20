@@ -35,11 +35,10 @@ jobs:
         echo "CPPFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
     - name: Setup meson and ninja
       run: pip install meson ninja
-    - name: Setup upterm session
-      uses: lhotari/action-upterm@v1
-      with:
-        ## If no one connects after 5 minutes, shut down server.
-        wait-timeout-minutes: 5
+    - name: debug info
+      run: |
+        which llvm-config
+        which clang
     - name: Prepare Build
       run: meson setup build
     - name: Run Build
