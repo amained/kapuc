@@ -26,20 +26,14 @@ jobs:
       uses: Homebrew/actions/setup-homebrew@master
     - name: Install LLVM (brew)
       run: brew install llvm@17
-    - name: Set LLVM Environment Variables
+    - name: Create Custom Meson Configuration File
       run: |
         LLVM_PREFIX=$(brew --prefix llvm)
-        echo "LLVM_PREFIX=$LLVM_PREFIX" >> $GITHUB_ENV
-        echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
-        echo "LDFLAGS=-L$LLVM_PREFIX/lib" >> $GITHUB_ENV
-        echo "CPPFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
+        echo "[binaries]" > custom-llvm.ini
+        echo "llvm-config = '$LLVM_PREFIX/bin/llvm-config'" >> custom-llvm.ini
     - name: Setup meson and ninja
       run: pip install meson ninja
-    - name: debug info
-      run: |
-        which llvm-config
-        which clang
     - name: Prepare Build
-      run: meson setup build
+      run: meson setup build --native-file custom-llvm.ini
     - name: Run Build
       run: meson compile -v -C build
