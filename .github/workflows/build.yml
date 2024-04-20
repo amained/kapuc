@@ -31,6 +31,8 @@ jobs:
         LLVM_PREFIX=$(brew --prefix llvm)
         echo "[binaries]" > custom-llvm.ini
         echo "llvm-config = '$LLVM_PREFIX/bin/llvm-config'" >> custom-llvm.ini
+        $LLVM_PREFIX/bin/llvm-config
+        cat custom-llvm.ini
     - name: Setup meson and ninja
       run: pip install meson ninja
     - name: Prepare Build
