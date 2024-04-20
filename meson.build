@@ -19,7 +19,7 @@ kapuc_sources = files('src/kapuc/helper.h', 'src/kapuc/lex.c', 'src/kapuc/lex.h'
 
 # Define the libraries
 sds_lib = static_library('sds', sds_sources, include_directories: include_directories('.'))
-ctl_lib = static_library('ctl', ctl_sources, include_directories: include_directories('.'))
+ctl_lib = library('ctl', ctl_sources, include_directories: include_directories('.'))
 log_lib = static_library('log', log_sources, include_directories: include_directories('.'))
 env_args_lib = static_library('env_args', env_args_sources, include_directories: include_directories('.'), dependencies: [llvm_dep])
 
