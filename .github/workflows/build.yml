@@ -1,4 +1,4 @@
-name: Bazel Build
+name: Build
 
 on:
  push:
@@ -21,11 +21,21 @@ jobs:
       #      if: matrix.os == 'windows-latest'
       #      with:
       #        packages: gcc-g++
-    - name: Set up Bazel
-      uses: bazel-contrib/setup-bazel@0.8.1
-      with:
-        bazelisk-cache: true
-        disk-cache: ${{ github.workflow }}-${{ github.matrix.os }}
-        repository-cache: true
-    - name: Build with Bazel
-      run: bazel build :kapuc
+    - name: Set up Homebrew
+      id: set-up-homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+    - name: Install LLVM (brew)
+      run: brew install llvm@17
+    - name: Set LLVM Environment Variables
+      run: |
+        LLVM_PREFIX=$(brew --prefix llvm)
+        echo "LLVM_PREFIX=$LLVM_PREFIX" >> $GITHUB_ENV
+        echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
+        echo "LDFLAGS=-L$LLVM_PREFIX/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
+    - name: Setup meson and ninja
+      run: pip install meson ninja
+    - name: Prepare Build
+      run: meson setup build
+    - name: Run Build
+      run: meson compile -v -C build
