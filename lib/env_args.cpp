@@ -3,6 +3,7 @@
 #endif
 
 #include "env_args.h"
+
 #include <llvm/Support/CommandLine.h>
 using namespace llvm;
 
@@ -85,7 +86,9 @@ extern "C"
         cl::AddExtraVersionPrinter(kapuc_version);
         cl::ParseCommandLineOptions(argc, *argv, "Kapuc: Kapu Compiler");
     }
-    get_opt_c_str(input) get_opt_c_str(output) get_opt_bool(print_ir)
-      get_opt_enum(OptsLevel, OLevel)
-        get_opt_bits_set(OptimizationBits, opt_dce)
+    get_opt_c_str(input);
+    get_opt_c_str(output);
+    get_opt_bool(print_ir);
+    get_opt_enum(OptsLevel, OLevel);
+    get_opt_bits_set(OptimizationBits, opt_dce);
 }

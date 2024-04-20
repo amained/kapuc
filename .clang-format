@@ -5,4 +5,10 @@ IndentWidth: 4
 Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Left
+AlignOperands: AlignAfterOperator
+IncludeBlocks: Regroup
+UseTab: Never
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: false
+RemoveBracesLLVM: true
 ---

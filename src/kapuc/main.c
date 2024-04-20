@@ -1,5 +1,6 @@
 #include "helper.h"
 #include "lib/log.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -9,9 +10,11 @@
 #include "lib/env_args.h"
 #include "lib/stb_ds.h"
 #include "parse.h"
+
 #include "llvm-c/Core.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
+
 #include <stdio.h>
 
 // Testing LLVM, incase something f'ed up
@@ -62,9 +65,9 @@ test_llvm_wasm()
     LLVMDisposeTargetMachine(machine);
     LLVMDisposeBuilder(builder);
     LLVMContextDispose(
-      c); // what is this consistency, also this needs to be disposed AFTER
-          // LLVMTargetMachineEmitToFile() or else we won't have the context in
-          // the module I think?
+      c); // what is this consistency, also this needs to be
+          // disposed AFTER LLVMTargetMachineEmitToFile() or else
+          // we won't have the context in the module I think?
 }
 
 void
@@ -121,6 +124,7 @@ test_llvm_native()
     // NOTE: This does not link! This just build object file (ELF in linux (and
     // *nix?), idk what in Windows) To link on linux, specify -lc and
     // -dynamic-linker to ld
+    // TODO: link it with LLVM
     LLVMTargetMachineEmitToFile(
       machine, module, "test.o", LLVMObjectFile, NULL);
     LLVMDisposeMessage(triple);
@@ -143,14 +147,12 @@ main(const int argc, char** argv)
     log_debug("Input file: %s", input);
     bool no_parse;
     char* x;
-    env_arg_str("NO_PARSE", x, 0) if (x != NULL && strcmp(x, "yes") == 0)
-    {
+    env_arg_str("NO_PARSE", x, 0);
+    if (x != NULL && strcmp(x, "yes") == 0)
         no_parse = true;
-    }
     else
-    {
         no_parse = false;
-    }
+
     BENCH_TIMER_SETUP FILE* f = fopen(input, "r");
     if (f == NULL) {
         log_error("Cannot open %s, exiting", argv[1]);
@@ -164,23 +166,29 @@ main(const int argc, char** argv)
     }
     log_debug("lexing finished: got %d tokens", arrlen(tokens));
 #ifdef SUPER_AGGRESSIVE_DEBUG
-    for (int i = 0; i < arrlen(tokens); i++)
+    for (int i = 0; i < arrlen(tokens); i++) {
         log_debug("tokens %d is %d: %s (pos: %ld-%ld)",
                   i + 1,
                   tokens[i].t,
                   tokens[i].s,
                   tokens[i].start + 1,
                   tokens[i].end + 1);
+    }
+
 #endif
     if (!no_parse) {
         log_debug("parsing started");
-        struct Parser p = { .tokens = tokens, .pos = 0, .filename = argv[1] };
-        if (p.error) {
-            log_error("failed parsing");
-            exit(1);
+        struct parser p = { tokens, 0 };
+        struct parse_tree* tree = malloc(sizeof(struct parse_tree));
+        if (!build_block(&p, tree))
+            log_debug("we fucked");
+        else {
+            log_debug("parsing finished");
+            print_entire_expression(tree);
+            putchar('\n');
+            log_debug("tree type: %d", tree->type);
+            free_parse_tree(tree);
         }
-        log_debug("parsing finished");
-        free_parser(&p);
     }
     log_debug("testing llvm");
     // initialize all
@@ -201,9 +209,9 @@ main(const int argc, char** argv)
     // for (int i = 0; i < arrlen(trees); i++) {
     // free_ast(&trees[i]);
     // }
-    // for (int i = 0; i < arrlen(tokens); i++) {
-    //    sdsfree(tokens[i].s);
-    // }
+    for (int i = 0; i < arrlen(tokens); i++)
+        sdsfree(tokens[i].s);
+    arrfree(tokens);
     // arrfree(trees);
     fclose(f);
 }

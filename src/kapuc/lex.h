@@ -1,4 +1,5 @@
 #include "lib/sds.h"
+
 #include <stdio.h>
 
 #ifndef KAPUC_LEX_H
@@ -10,6 +11,7 @@ enum TOK_TYPE
     IF,
     ELSE,
     ELIF,
+    FOR,
     LET,
     CONST,
     IDENT,
@@ -26,6 +28,7 @@ enum TOK_TYPE
     LBRACKET,
     RBRACKET,
     COLON,
+    DOUBLE_COLON,
     COMMA,
     SEMICOLON,
     DOT,
@@ -39,10 +42,14 @@ enum TOK_TYPE
     EQ,
     COMP_EQ,
     COMP_NEQ,
-    COMP_LEQ,
-    COMP_MEQ,
-    COMP_MT,
-    COMP_LT,
+    PLUS_EQ,
+    MINUS_EQ,
+    MULT_EQ,
+    DIV_EQ,
+    LA_EQ,
+    RA_EQ,
+    RIGHT_ANGLE,
+    LEFT_ANGLE,
     T_ERR
 };
 
