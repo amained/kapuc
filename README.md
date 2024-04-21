@@ -2,12 +2,16 @@
 General programming language for low-level performant program.
 
 ## Build instruction
+- nix users can use this
+  ```bash
+  nix-shell -p meson wezterm llvmPackages_17.libllvm ninja
+  ```
 - install llvm version >17.0
   - ubuntu/debian users use this
   ```bash
   wget https://apt.llvm.org/llvm.sh
   chmod +x llvm.sh
-  sudo ./llvm.sh 17
+  ./llvm.sh 17 # run as root
   ```
 - install meson and ninja (```python3 -m pip install --user meson ninja```)
 
