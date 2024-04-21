@@ -14,9 +14,14 @@ General programming language for low-level performant program.
   ./llvm.sh 17 # run as root
   ```
 - install meson and ninja (```python3 -m pip install --user meson ninja```)
+- actually building
+  ```bash
+  mkdir build # or whatever equivalent of this on Windows
+  meson setup build
+  meson compile -v -C build
+  ```
 
 ## Development instruction
-- Generate `compile_commands.json` with `bazel run :refresh_compile_commands` for autocomplete
 - Look at
   - `spec.md` for the spec of the language
   - (TODO) `docs/**/*.md` for documentation of libraries and the compiler
@@ -32,4 +37,5 @@ General programming language for low-level performant program.
 ## Known issues
 - Windows
   - Probably have an linking issues on build, no testing were done on Windows.
-  - Cannot be built with `cl.exe` (Visual Studio C Compiler), please use Cygwin if you are on Windows or use WSL.
+  - Cannot be built with `cl.exe` (Visual Studio C Compiler), please use Cygwin if you are on Windows or use WSL. 
+    (TODO: this could work? we could remove posix parts out but why)
