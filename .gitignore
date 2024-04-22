@@ -1,15 +1,7 @@
-bazel-*
-external
-
-build
-install
-main.o
-main.out
-main.dump
-
-gccjit.log
-
+.cache
+.vscode
 **/*.swp
 
 .cache
-compile_commands.json
+
+build/*
