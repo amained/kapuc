@@ -6,6 +6,7 @@
 
 #define STB_DS_IMPLEMENTATION
 #define SHIT_IS_IN_TESTING
+#include "analyzer/analysis.h"
 #include "lex.h"
 #include "lib/env_args.h"
 #include "lib/stb_ds.h"
@@ -187,6 +188,12 @@ main(const int argc, char** argv)
             print_entire_expression(tree);
             putchar('\n');
             log_debug("tree type: %d", tree->type);
+            // try checking block
+            if (tree->type == LVL_STMTS) {
+                log_debug("got lvl_stmts, try checking block");
+                check_block(tree, NULL);
+                log_debug("ooh we survive segfault");
+            }
             free_parse_tree(tree);
         }
     }
