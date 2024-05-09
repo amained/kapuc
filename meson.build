@@ -15,7 +15,7 @@ log_headers = files('lib/log.h')
 env_args_sources = files('lib/env_args.cpp')
 env_args_headers = files('lib/env_args.h')
 
-kapuc_sources = files('src/kapuc/helper.h', 'src/kapuc/lex.c', 'src/kapuc/lex.h', 'src/kapuc/main.c', 'src/kapuc/parse.c', 'src/kapuc/parse.h', 'src/kapuc/analyzer/analysis.c', 'src/kapuc/analyzer/analysis.h', 'src/kapuc/analyzer/scope_analysis.h')
+kapuc_sources = files('src/kapuc/helper.h', 'src/kapuc/lex.c', 'src/kapuc/lex.h', 'src/kapuc/main.c', 'src/kapuc/parse.c', 'src/kapuc/parse.h', 'src/kapuc/analyzer/analysis.c', 'src/kapuc/analyzer/analysis.h', 'src/kapuc/analyzer/scope_analysis.h', 'src/kapuc/PIR/generator.c', 'src/kapuc/PIR/generator.h', 'src/kapuc/PIR/compiler.c', 'src/kapuc/PIR/compiler.h', 'src/kapuc/PIR/PIR.h')
 
 # Define the libraries
 sds_lib = static_library('sds', sds_sources, include_directories: include_directories('.'))

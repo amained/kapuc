@@ -11,6 +11,8 @@
 #include "lib/env_args.h"
 #include "lib/stb_ds.h"
 #include "parse.h"
+#include "PIR/generator.h"
+#include "PIR/compiler.h"
 
 #include "llvm-c/Core.h"
 #include "llvm-c/Target.h"
@@ -177,6 +179,12 @@ main(const int argc, char** argv)
     }
 
 #endif
+    // initialize all
+    LLVMInitializeAllTargetInfos();
+    LLVMInitializeAllTargets();
+    LLVMInitializeAllTargetMCs();
+    LLVMInitializeAllAsmParsers();
+    LLVMInitializeAllAsmPrinters();
     if (!no_parse) {
         log_debug("parsing started");
         struct parser p = { tokens, 0 };
@@ -194,16 +202,34 @@ main(const int argc, char** argv)
                 check_block(tree, NULL);
                 log_debug("ooh we survive segfault");
             }
+            log_debug("creating PIR");
+            struct PIR* p = create_PIR();
+            if (p == false) log_error("failed to generate PIR");
+            else {
+              typing t = INT8_TYPING;
+              size_t function_index = add_function_to_PIR(p, sdsnew("main"), &t);
+              if (function_index == -1) log_error("failed to add function to PIR");
+              else log_debug("successfully add function to PIR, index: %d", function_index);
+              size_t b_index = add_block_to_function(p, function_index);
+              expr* e = malloc(sizeof(expr));
+              e->t = Val;
+              e->v.t = t;
+              e->v.int__val = 0;
+              size_t var_index = add_Expr_to_block(p, function_index, b_index, e, t);
+              log_debug("var_index: %d", var_index);
+              size_t ret_index = add_Ret_to_block(p, function_index, b_index, e);
+              log_debug("ret_index: %d", ret_index);
+              print_PIR(p);
+              LLVMModuleRef m = generate_LLVM_IR(p, "test");
+              LLVMDumpModule(m);
+              compile_module(m, "test_pir.o");
+              free_PIR(p);
+            }
             free_parse_tree(tree);
         }
     }
     log_debug("testing llvm");
-    // initialize all
-    LLVMInitializeAllTargetInfos();
-    LLVMInitializeAllTargets();
-    LLVMInitializeAllTargetMCs();
-    LLVMInitializeAllAsmParsers();
-    LLVMInitializeAllAsmPrinters();
+
 
     test_llvm_wasm();
     test_llvm_native();
