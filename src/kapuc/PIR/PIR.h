@@ -19,7 +19,7 @@ enum expr_type {
 typedef struct {
     bool is_default_type;
     union {
-        uint8_t default_type; // 0: int8, 1: int16, 2: int32, 3: int64, 4: int128
+        uint8_t default_type; // 0: int8, 1: int16, 2: int32, 3: int64, 4: bool (int1)
         // FIXME: add type trail for custom type
     };
 } typing;
@@ -88,7 +88,7 @@ struct FUNC {
 };
 
 typedef enum {
-    func
+    func,
 } main_type;
 
 typedef struct {

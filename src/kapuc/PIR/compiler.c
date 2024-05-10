@@ -31,15 +31,14 @@ void add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRe
   break;\
 }
 
+#define ALL_TYPE(M) M(0, LLVMInt8Type()) M(1, LLVMInt16Type()) M(2, LLVMInt32Type()) M(3, LLVMInt64Type()) M(4, LLVMInt1Type())
+
 static LLVMValueRef resolve_static_val(val* v) {
   log_debug("resolving static value of type %d", v->t);
   assert(v->t.is_default_type);
   switch(v->t.default_type) {
     #define INTTYVAL(a,b) TYSWITCH(a,b,return LLVMConstInt(b, v->int__val, false))
-    INTTYVAL(0, LLVMInt8Type())
-    INTTYVAL(1, LLVMInt16Type())
-    INTTYVAL(2, LLVMInt32Type())
-    INTTYVAL(3, LLVMInt64Type())
+    ALL_TYPE(INTTYVAL)
     default: return NULL;
     #undef INTTYVAL
   }
@@ -85,10 +84,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                 LLVMBuilderRef builder = LLVMCreateBuilder();
                 switch(iter.ref->func.t.default_type) {
 #define FUNCTY(a,b) TYSWITCH(a,b,ret_type = LLVMFunctionType(b, NULL, 0, 0));
-                    FUNCTY(0,LLVMInt8Type());
-                    FUNCTY(1,LLVMInt16Type());
-                    FUNCTY(2,LLVMInt32Type());
-                    FUNCTY(3,LLVMInt64Type());
+                    ALL_TYPE(FUNCTY)
 #undef FUNCTY
                 }
                 LLVMValueRef f = LLVMAddFunction(module, iter.ref->func.name, ret_type);
@@ -113,10 +109,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                             if (iter3.ref->assignment.e.t == Val) assert(iter3.ref->assignment.e.v.t.is_default_type);
                             LLVMValueRef lhs;
                             switch (iter3.ref->assignment.e.v.t.default_type) {
-                              ASSIGNTY(0, LLVMInt8Type())
-                              ASSIGNTY(1, LLVMInt16Type())
-                              ASSIGNTY(2, LLVMInt32Type())
-                              ASSIGNTY(3, LLVMInt64Type())
+                              ALL_TYPE(ASSIGNTY)
                             }
                             LLVMBuildStore(builder, resolve_val(&iter3.ref->assignment.e, &v, builder), lhs);
                             f->isAlloca_ed = true;
@@ -131,7 +124,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                             switch(iter3.ref->assignment.e.t) {
                               GENLLVMBUILDE(Add, Add)
                               GENLLVMBUILDE(Mul, Mul)
-                              GENLLVMBUILDE(Div, ExactUDiv)
+                              GENLLVMBUILDE(Div, SDiv)
                               GENLLVMBUILDE(Del, Sub)
                               default: assert(false);
                             }
