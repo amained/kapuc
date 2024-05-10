@@ -20,8 +20,8 @@ void add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRe
     LLVMBasicBlockRef _start_block =
       LLVMAppendBasicBlock(_start_func, "_start_real_entry");
     LLVMPositionBuilderAtEnd(builder2, _start_block);
-    LLVMBuildCall2(builder2, t, main, NULL, 0, "main");
-    LLVMValueRef arg[] = { LLVMConstInt(LLVMInt32Type(), 0, 0) };
+    LLVMValueRef main_call = LLVMBuildCall2(builder2, t, main, NULL, 0, "main");
+    LLVMValueRef arg[] = { main_call };
     LLVMBuildCall2(builder2, exit_type, exit_func, arg, 1, "");
     LLVMBuildUnreachable(builder2);
 }
@@ -60,10 +60,10 @@ LLVMValueRef_copy(T* V) {
 #include "lib/ctl/vec.h"
 #undef T
 
-static inline LLVMValueRef resolve_val(expr* e, vec_LLVMValueRef* v) {
+static inline LLVMValueRef resolve_val(expr* e, vec_LLVMValueRef* v, LLVMBuilderRef b) {
   switch(e->t) {
     case Val: return resolve_static_val(&e->v);
-    case Func_val: return *vec_LLVMValueRef_at(v, e->func_val); // Internal Compiler Crash if NULL, FIXME: rewrite this shit
+    case Func_val: return LLVMBuildLoad2(b, LLVMInt8Type(), *vec_LLVMValueRef_at(v, e->func_val), ""); // Internal Compiler Crash if NULL, FIXME: rewrite this shit
     default: return NULL;
   }
 }
@@ -101,7 +101,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                         switch(iter3.ref->assignment.e.t) {
                           case Val: {
                             log_debug("Val!");
-                            #define ASSIGNTY(a,b) TYSWITCH(a,b,lhs = LLVMBuildAlloca(builder, b, "ee"));
+                            #define ASSIGNTY(a,b) TYSWITCH(a,b,lhs = LLVMBuildAlloca(builder, b, ""));
                             assert(iter3.ref->assignment.e.v.t.is_default_type);
                             LLVMValueRef lhs;
                             switch (iter3.ref->assignment.e.v.t.default_type) {
@@ -120,7 +120,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                       }
                       case ret: {
                         log_debug("found ret!");
-                        LLVMBuildRet(builder, resolve_val(&iter3.ref->ret_val, &v));
+                        LLVMBuildRet(builder, resolve_val(&iter3.ref->ret_val, &v, builder));
                         continue;
                       }
                       default: {
