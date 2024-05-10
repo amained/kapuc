@@ -47,23 +47,29 @@ static LLVMValueRef resolve_static_val(val* v) {
 
 // for func_val <-> LLVMValueRef
 // we can use vec for this since func_var is supposed to be linear anyways
-#define T LLVMValueRef
-void LLVMValueRef_free(T*) {
+typedef struct {bool isAlloca_ed; LLVMValueRef v;} FuncVarReg;
+#define T FuncVarReg
+void FuncVarReg_free(T*) {
   // we do nothing since we can just dispose entire module for that
 }
 T
-LLVMValueRef_copy(T* V) {
-  LLVMValueRef* V2 = malloc(sizeof(LLVMValueRef)); // I mean it's just pointer?? also this function shouldn't be called anyways?
-  memcpy(V2, V, sizeof(LLVMValueRef));
+FuncVarReg_copy(T* V) {
+  FuncVarReg* V2 = malloc(sizeof(FuncVarReg)); // I mean it's just pointer?? also this function shouldn't be called anyways?
+  memcpy(V2, V, sizeof(FuncVarReg));
   return *V2;
 }
 #include "lib/ctl/vec.h"
 #undef T
 
-static inline LLVMValueRef resolve_val(expr* e, vec_LLVMValueRef* v, LLVMBuilderRef b) {
+static inline LLVMValueRef resolve_val(expr* e, vec_FuncVarReg* v, LLVMBuilderRef b) {
   switch(e->t) {
     case Val: return resolve_static_val(&e->v);
-    case Func_val: return LLVMBuildLoad2(b, LLVMInt8Type(), *vec_LLVMValueRef_at(v, e->func_val), ""); // Internal Compiler Crash if NULL, FIXME: rewrite this shit
+    case Func_val: {
+      FuncVarReg* smol_v = vec_FuncVarReg_at(v, e->func_val);
+      if (smol_v->isAlloca_ed) 
+        return LLVMBuildLoad2(b, LLVMInt8Type(), smol_v->v, ""); // Internal Compiler Crash if NULL, FIXME: rewrite this shit
+      return smol_v->v;
+    }
     default: return NULL;
   }
 }
@@ -88,7 +94,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                 LLVMValueRef f = LLVMAddFunction(module, iter.ref->func.name, ret_type);
                 char val[15]; // TODO: figure out why 15
                 size_t current_pos = 0;
-                vec_LLVMValueRef v = vec_LLVMValueRef_init();
+                vec_FuncVarReg v = vec_FuncVarReg_init();
                 foreach(vec_BLOCK, &iter.ref->func.bs, iter2) {
                   sprintf(val, "$%zu", current_pos); // TODO: add some debug info here on debug build? Incase the compiler f-up we could check the IR
                   LLVMBasicBlockRef block = LLVMAppendBasicBlock(f, val);
@@ -97,6 +103,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                     log_debug("checking");
                     switch(iter3.ref->t) {
                       case assignment: {
+                        FuncVarReg* f = malloc(sizeof(FuncVarReg));
                         log_debug("found assignment to _%d as %d", iter3.ref->assignment.id, iter3.ref->assignment.e.t);
                         switch(iter3.ref->assignment.e.t) {
                           case Val: {
@@ -111,11 +118,13 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                               ASSIGNTY(3, LLVMInt64Type())
                             }
                             LLVMBuildStore(builder, resolve_static_val(&iter3.ref->assignment.e.v), lhs);
-                            vec_LLVMValueRef_push_back(&v, lhs);
+                            f->isAlloca_ed = true;
+                            f->v = lhs;
                             break;
                           }
                           default: {log_debug("what %d", iter3.ref->assignment.e.t);}
                         }
+                        vec_FuncVarReg_push_back(&v, *f);
                         continue;
                       }
                       case ret: {
