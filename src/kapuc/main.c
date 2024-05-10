@@ -207,17 +207,21 @@ main(const int argc, char** argv)
             if (p == false) log_error("failed to generate PIR");
             else {
               typing t = INT8_TYPING;
+              typing t2 = INT16_TYPING;
               size_t function_index = add_function_to_PIR(p, sdsnew("main"), &t);
               if (function_index == -1) log_error("failed to add function to PIR");
               else log_debug("successfully add function to PIR, index: %d", function_index);
               size_t b_index = add_block_to_function(p, function_index);
               expr* e = malloc(sizeof(expr));
               e->t = Val;
-              e->v.t = t;
+              e->v.t = t2;
               e->v.int__val = 0;
               size_t var_index = add_Expr_to_block(p, function_index, b_index, e, t);
               log_debug("var_index: %d", var_index);
-              size_t ret_index = add_Ret_to_block(p, function_index, b_index, e);
+              expr* e_ret = malloc(sizeof(expr));
+              e_ret->t = Func_val;
+              e_ret->func_val = var_index;
+              size_t ret_index = add_Ret_to_block(p, function_index, b_index, e_ret);
               log_debug("ret_index: %d", ret_index);
               print_PIR(p);
               LLVMModuleRef m = generate_LLVM_IR(p, "test");

@@ -4,6 +4,7 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/TargetMachine.h"
 #include "llvm-c/Types.h"
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -25,9 +26,46 @@ void add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRe
     LLVMBuildUnreachable(builder2);
 }
 
-#define FUNCTY(a,b) case a: {\
-    ret_type = LLVMFunctionType(b, NULL, 0, 0);\
-    break;\
+#define TYSWITCH(a,b,c) case a: {\
+  c;\
+  break;\
+}
+
+static LLVMValueRef resolve_static_val(val* v) {
+  log_debug("resolving static value of type %d", v->t);
+  assert(v->t.is_default_type);
+  switch(v->t.default_type) {
+    #define INTTYVAL(a,b) TYSWITCH(a,b,return LLVMConstInt(b, v->int__val, false))
+    INTTYVAL(0, LLVMInt8Type())
+    INTTYVAL(1, LLVMInt16Type())
+    INTTYVAL(2, LLVMInt32Type())
+    INTTYVAL(3, LLVMInt64Type())
+    default: return NULL;
+    #undef INTTYVAL
+  }
+}
+
+// for func_val <-> LLVMValueRef
+// we can use vec for this since func_var is supposed to be linear anyways
+#define T LLVMValueRef
+void LLVMValueRef_free(T*) {
+  // we do nothing since we can just dispose entire module for that
+}
+T
+LLVMValueRef_copy(T* V) {
+  LLVMValueRef* V2 = malloc(sizeof(LLVMValueRef)); // I mean it's just pointer?? also this function shouldn't be called anyways?
+  memcpy(V2, V, sizeof(LLVMValueRef));
+  return *V2;
+}
+#include "lib/ctl/vec.h"
+#undef T
+
+static inline LLVMValueRef resolve_val(expr* e, vec_LLVMValueRef* v) {
+  switch(e->t) {
+    case Val: return resolve_static_val(&e->v);
+    case Func_val: return *vec_LLVMValueRef_at(v, e->func_val); // Internal Compiler Crash if NULL, FIXME: rewrite this shit
+    default: return NULL;
+  }
 }
 
 LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
@@ -36,17 +74,21 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
         switch(iter.ref->type) {
             case func: {
                 // check typing
-                if (!iter.ref->func.t.is_default_type) exit(1);
+                assert(iter.ref->func.t.is_default_type);
                 LLVMTypeRef ret_type = NULL;
                 LLVMBuilderRef builder = LLVMCreateBuilder();
                 switch(iter.ref->func.t.default_type) {
+#define FUNCTY(a,b) TYSWITCH(a,b,ret_type = LLVMFunctionType(b, NULL, 0, 0));
                     FUNCTY(0,LLVMInt8Type());
                     FUNCTY(1,LLVMInt16Type());
-                    FUNCTY(2,LLVMInt16Type());
+                    FUNCTY(2,LLVMInt32Type());
+                    FUNCTY(3,LLVMInt64Type());
+#undef FUNCTY
                 }
                 LLVMValueRef f = LLVMAddFunction(module, iter.ref->func.name, ret_type);
                 char val[15]; // TODO: figure out why 15
                 size_t current_pos = 0;
+                vec_LLVMValueRef v = vec_LLVMValueRef_init();
                 foreach(vec_BLOCK, &iter.ref->func.bs, iter2) {
                   sprintf(val, "$%zu", current_pos); // TODO: add some debug info here on debug build? Incase the compiler f-up we could check the IR
                   LLVMBasicBlockRef block = LLVMAppendBasicBlock(f, val);
@@ -56,11 +98,20 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                     switch(iter3.ref->t) {
                       case assignment: {
                         log_debug("found assignment to _%d as %d", iter3.ref->assignment.id, iter3.ref->assignment.e.t);
-                        LLVMValueRef lhs = LLVMBuildAlloca(builder, LLVMInt8Type(), "ee");
                         switch(iter3.ref->assignment.e.t) {
                           case Val: {
                             log_debug("Val!");
-                            LLVMBuildStore(builder, LLVMConstInt(LLVMInt8Type(), 0, false), lhs);
+                            #define ASSIGNTY(a,b) TYSWITCH(a,b,lhs = LLVMBuildAlloca(builder, b, "ee"));
+                            assert(iter3.ref->assignment.e.v.t.is_default_type);
+                            LLVMValueRef lhs;
+                            switch (iter3.ref->assignment.e.v.t.default_type) {
+                              ASSIGNTY(0, LLVMInt8Type())
+                              ASSIGNTY(1, LLVMInt16Type())
+                              ASSIGNTY(2, LLVMInt32Type())
+                              ASSIGNTY(3, LLVMInt64Type())
+                            }
+                            LLVMBuildStore(builder, resolve_static_val(&iter3.ref->assignment.e.v), lhs);
+                            vec_LLVMValueRef_push_back(&v, lhs);
                             break;
                           }
                           default: {log_debug("what %d", iter3.ref->assignment.e.t);}
@@ -69,16 +120,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                       }
                       case ret: {
                         log_debug("found ret!");
-                        // TODO: resolve value with a universal function
-                        // something like LLVMValueRef resolve_value(...)
-                        switch(iter3.ref->ret_val.t) {
-                          case Val: {
-                            log_debug("Val!");
-                            LLVMBuildRet(builder, LLVMConstInt(LLVMInt8Type(), 2, false));
-                            break;
-                          }
-                          default: {log_debug("what %d", iter3.ref->ret_val.t);}
-                        }
+                        LLVMBuildRet(builder, resolve_val(&iter3.ref->ret_val, &v));
                         continue;
                       }
                       default: {

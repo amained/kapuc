@@ -22,3 +22,4 @@ add_Ret_to_block(struct PIR* p,
                  int block_index,
                  expr* value);
 #define INT8_TYPING {.is_default_type = true, .default_type = 0}
+#define INT16_TYPING {.is_default_type = true, .default_type = 1}

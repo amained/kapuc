@@ -2,7 +2,6 @@
 
 #include "lex.h"
 #include "lib/log.h"
-#include "lib/sds.h"
 #include "lib/stb_ds.h"
 
 #include <stdio.h>
