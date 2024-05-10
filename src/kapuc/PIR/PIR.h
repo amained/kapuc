@@ -32,12 +32,10 @@ typedef struct {
     };
 } val;
 
-typedef struct {val* lhs; val* rhs;} BinExpr;
-
-typedef struct {
+typedef struct expr_{
     enum expr_type t;
     union {
-        BinExpr b;
+        struct {struct expr_* lhs; struct expr_* rhs;} b;
         val v;
         size_t func_val;
     };

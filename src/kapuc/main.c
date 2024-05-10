@@ -223,6 +223,20 @@ main(const int argc, char** argv)
               e->func_val = old_var_index;
               size_t new_var_index = add_Expr_to_block(p, function_index, b_index, e, t);
               log_debug("new var_index: %d", new_var_index);
+
+              expr* e_lhs = malloc(sizeof(expr));
+              e_lhs->t = Func_val;
+              e_lhs->func_val = old_var_index;
+              expr* e_rhs = malloc(sizeof(expr));
+              e_rhs->t = Func_val;
+              e_rhs->func_val = old_var_index;
+              expr* e_add = malloc(sizeof(expr));
+              e_add->t = Add;
+              e_add->b.lhs = e_lhs;
+              e_add->b.rhs = e_rhs;
+              size_t add_index = add_Expr_to_block(p, function_index, b_index, e_add, t);
+              log_debug("add_index: %d", add_index);
+
               expr* e_ret = malloc(sizeof(expr));
               e_ret->t = Func_val;
               e_ret->func_val = old_var_index;

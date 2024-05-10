@@ -124,9 +124,20 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                             break;
                           }
                           default: {
-                            // probably expr and shit
+                            // Add and stuff
                             log_debug("what %d", iter3.ref->assignment.e.t);
-                            continue;
+                            LLVMValueRef val;
+                            #define GENLLVMBUILDE(E, E2) case E: {val = LLVMBuild##E2(builder, resolve_val(iter3.ref->assignment.e.b.lhs, &v, builder), resolve_val(iter3.ref->assignment.e.b.rhs, &v, builder), ""); break;}
+                            switch(iter3.ref->assignment.e.t) {
+                              GENLLVMBUILDE(Add, Add)
+                              GENLLVMBUILDE(Mul, Mul)
+                              GENLLVMBUILDE(Div, ExactUDiv)
+                              GENLLVMBUILDE(Del, Sub)
+                              default: assert(false);
+                            }
+                            f->isAlloca_ed = false;
+                            f->v = val;
+                            break;
                           }
                         }
                         vec_FuncVarReg_push_back(&v, *f);
