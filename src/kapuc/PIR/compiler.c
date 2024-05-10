@@ -67,7 +67,7 @@ static inline LLVMValueRef resolve_val(expr* e, vec_FuncVarReg* v, LLVMBuilderRe
     case Func_val: {
       FuncVarReg* smol_v = vec_FuncVarReg_at(v, e->func_val);
       if (smol_v->isAlloca_ed) 
-        return LLVMBuildLoad2(b, LLVMInt8Type(), smol_v->v, ""); // Internal Compiler Crash if NULL, FIXME: rewrite this shit
+        return LLVMBuildLoad2(b, LLVMInt8Type(), smol_v->v, "");
       return smol_v->v;
     }
     default: return NULL;
@@ -106,10 +106,11 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                         FuncVarReg* f = malloc(sizeof(FuncVarReg));
                         log_debug("found assignment to _%d as %d", iter3.ref->assignment.id, iter3.ref->assignment.e.t);
                         switch(iter3.ref->assignment.e.t) {
+                          case Func_val:
                           case Val: {
                             log_debug("Val!");
                             #define ASSIGNTY(a,b) TYSWITCH(a,b,lhs = LLVMBuildAlloca(builder, b, ""));
-                            assert(iter3.ref->assignment.e.v.t.is_default_type);
+                            if (iter3.ref->assignment.e.t == Val) assert(iter3.ref->assignment.e.v.t.is_default_type);
                             LLVMValueRef lhs;
                             switch (iter3.ref->assignment.e.v.t.default_type) {
                               ASSIGNTY(0, LLVMInt8Type())
@@ -117,12 +118,16 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                               ASSIGNTY(2, LLVMInt32Type())
                               ASSIGNTY(3, LLVMInt64Type())
                             }
-                            LLVMBuildStore(builder, resolve_static_val(&iter3.ref->assignment.e.v), lhs);
+                            LLVMBuildStore(builder, resolve_val(&iter3.ref->assignment.e, &v, builder), lhs);
                             f->isAlloca_ed = true;
                             f->v = lhs;
                             break;
                           }
-                          default: {log_debug("what %d", iter3.ref->assignment.e.t);}
+                          default: {
+                            // probably expr and shit
+                            log_debug("what %d", iter3.ref->assignment.e.t);
+                            continue;
+                          }
                         }
                         vec_FuncVarReg_push_back(&v, *f);
                         continue;
