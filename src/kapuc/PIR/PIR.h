@@ -18,6 +18,7 @@ enum expr_type {
 
 typedef struct {
     bool is_default_type;
+    bool is_ptr;
     union {
         uint8_t default_type; // 0: int8, 1: int16, 2: int32, 3: int64, 4: bool (int1)
         // FIXME: add type trail for custom type
@@ -48,14 +49,20 @@ struct assignment {
 
 typedef enum {
     assignment,
-    ret
+    ret,
+    call
 } stmt_type;
+
+typedef struct {
+    size_t call_ids; // the main_blocks index
+} call_expr;
 
 typedef struct {
     stmt_type t;
     union {
         struct assignment assignment;
         expr ret_val;
+        call_expr call_ca;
     };
 } stmt;
 #define T stmt
@@ -85,10 +92,12 @@ struct FUNC {
     vec_FUNC_VAR vv;
     vec_BLOCK bs;
     typing t;
+    bool is_external;
+    bool is_variadic;
 };
 
 typedef enum {
-    func,
+    func
 } main_type;
 
 typedef struct {

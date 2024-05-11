@@ -208,7 +208,12 @@ main(const int argc, char** argv)
             else {
               typing t = INT8_TYPING;
               typing t2 = INT16_TYPING;
-              size_t function_index = add_function_to_PIR(p, sdsnew("main"), &t);
+              size_t putchar_index = add_function_to_PIR(p, sdsnew("putchar"), &t, true, false);
+              val* v = malloc(sizeof(val));
+              v->t = t;
+              v->int__val = 'c';
+
+              size_t function_index = add_function_to_PIR(p, sdsnew("main"), &t, false, false);
               if (function_index == -1) log_error("failed to add function to PIR");
               else log_debug("successfully add function to PIR, index: %d", function_index);
               size_t b_index = add_block_to_function(p, function_index);
@@ -236,6 +241,10 @@ main(const int argc, char** argv)
               e_add->b.rhs = e_rhs;
               size_t add_index = add_Expr_to_block(p, function_index, b_index, e_add, t);
               log_debug("add_index: %d", add_index);
+
+              // add call
+              size_t x = add_Call_to_block(p, function_index, b_index, 1);
+              log_debug("call index: %d", x);
 
               expr* e_ret = malloc(sizeof(expr));
               e_ret->t = Func_val;

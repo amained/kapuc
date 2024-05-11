@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRef t) {
+static void add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRef t) {
     LLVMTypeRef exit_arg_types[] = { LLVMInt32Type() };
     LLVMTypeRef exit_type =
       LLVMFunctionType(LLVMVoidType(), exit_arg_types, 1, 0);
@@ -33,7 +33,7 @@ void add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRe
 
 #define ALL_TYPE(M) M(0, LLVMInt8Type()) M(1, LLVMInt16Type()) M(2, LLVMInt32Type()) M(3, LLVMInt64Type()) M(4, LLVMInt1Type())
 
-static LLVMValueRef resolve_static_val(val* v) {
+static inline LLVMValueRef _resolve_static_val(val* v) {
   log_debug("resolving static value of type %d", v->t);
   assert(v->t.is_default_type);
   switch(v->t.default_type) {
@@ -42,6 +42,13 @@ static LLVMValueRef resolve_static_val(val* v) {
     default: return NULL;
     #undef INTTYVAL
   }
+}
+
+static LLVMValueRef resolve_static_val(val* v, LLVMBuilderRef b) {
+  if (v->t.is_ptr) {
+    return LLVMBuildIntToPtr(b, _resolve_static_val(v), LLVMInt8Type(), "");
+  }
+  return _resolve_static_val(v);
 }
 
 // for func_val <-> LLVMValueRef
@@ -60,9 +67,24 @@ FuncVarReg_copy(T* V) {
 #include "lib/ctl/vec.h"
 #undef T
 
+// for func <-> LLVMValueRef
+typedef struct {bool is_external; LLVMValueRef v;} Func;
+#define T Func
+void Func_free(T*) {
+  // we do nothing since we can just dispose entire module for that
+}
+T
+Func_copy(T* V) {
+  Func* V2 = malloc(sizeof(Func)); // I mean it's just pointer?? also this function shouldn't be called anyways?
+  memcpy(V2, V, sizeof(Func));
+  return *V2;
+}
+#include "lib/ctl/vec.h"
+#undef T
+
 static inline LLVMValueRef resolve_val(expr* e, vec_FuncVarReg* v, LLVMBuilderRef b) {
   switch(e->t) {
-    case Val: return resolve_static_val(&e->v);
+    case Val: return resolve_static_val(&e->v, b);
     case Func_val: {
       FuncVarReg* smol_v = vec_FuncVarReg_at(v, e->func_val);
       if (smol_v->isAlloca_ed) 
@@ -75,6 +97,7 @@ static inline LLVMValueRef resolve_val(expr* e, vec_FuncVarReg* v, LLVMBuilderRe
 
 LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
     LLVMModuleRef module = LLVMModuleCreateWithName(module_name);
+    vec_Func fs = vec_Func_init();
     foreach(vec_MAIN_BLOCK, &p->main_blocks, iter) {
         switch(iter.ref->type) {
             case func: {
@@ -83,11 +106,18 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                 LLVMTypeRef ret_type = NULL;
                 LLVMBuilderRef builder = LLVMCreateBuilder();
                 switch(iter.ref->func.t.default_type) {
-#define FUNCTY(a,b) TYSWITCH(a,b,ret_type = LLVMFunctionType(b, NULL, 0, 0));
+#define FUNCTY(a,b) TYSWITCH(a,b,ret_type = b);
                     ALL_TYPE(FUNCTY)
 #undef FUNCTY
                 }
+                  ret_type = LLVMFunctionType(ret_type, NULL, 0, iter.ref->func.is_variadic);
                 LLVMValueRef f = LLVMAddFunction(module, iter.ref->func.name, ret_type);
+                log_debug("type: %s", LLVMPrintTypeToString(ret_type));
+                Func* fi = malloc(sizeof(Func));
+                fi->is_external = iter.ref->func.is_external;
+                fi->v = f;
+                vec_Func_push_back(&fs, *fi);
+                if (!iter.ref->func.is_external) {
                 char val[15]; // TODO: figure out why 15
                 size_t current_pos = 0;
                 vec_FuncVarReg v = vec_FuncVarReg_init();
@@ -141,6 +171,17 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                         LLVMBuildRet(builder, resolve_val(&iter3.ref->ret_val, &v, builder));
                         continue;
                       }
+                      case call: {
+                        log_debug("found call!");
+                        Func* fi = vec_Func_at(&fs, iter3.ref->call_ca.call_ids);
+                        if (fi == NULL) {
+                          log_error("Failed to resolve function, is it created yet?");
+                          log_debug("Continuing from error");
+                          continue;
+                        }
+                        LLVMBuildCall2(builder, LLVMGlobalGetValueType(fi->v), fi->v, NULL, 0, ""); // this is always global anyways
+                        continue;
+                      }
                       default: {
                         log_debug("found weird shit at pos %zu", current_pos);
                         break;
@@ -152,6 +193,7 @@ LLVMModuleRef generate_LLVM_IR(struct PIR* p, char* module_name) {
                 if (strcmp(iter.ref->func.name, "main") == 0) {
                     printf("found main!\n");
                     add_default__start_func(module, f, ret_type); // the PIR should have only 1 main anyways
+                }
                 }
                 continue;
             }

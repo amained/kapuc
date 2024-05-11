@@ -1,4 +1,5 @@
 #include "generator.h"
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -84,13 +85,22 @@ size_t add_main_block_to_PIR(struct PIR* p, MAIN_BLOCK *b) {
     return -1;
 }
 
-size_t add_function_to_PIR(struct PIR* p, sds function_name, typing *t) {
+size_t add_function_to_PIR(struct PIR* p, sds function_name, typing *t, bool is_external, bool is_variadic) {
     MAIN_BLOCK *b = malloc(sizeof(MAIN_BLOCK));
+    if (!is_external) assert(!is_variadic);
     b->type = func;
     struct FUNC* f = malloc(sizeof(struct FUNC));
     f->name = function_name;
-    f->bs = vec_BLOCK_init();
-    f->vv = vec_FUNC_VAR_init();
+    if (f->is_external) {
+        f->is_external = true;
+        f->is_variadic = is_variadic;
+    }
+    else {
+        f->is_external = false;
+        f->is_variadic = false;
+        f->bs = vec_BLOCK_init();
+        f->vv = vec_FUNC_VAR_init();
+    }
     f->t = *t;
     b->func = *f;
     return add_main_block_to_PIR(p, b);
@@ -153,6 +163,18 @@ add_Ret_to_block(struct PIR* p,
     s->ret_val = *value;
     add_stmt_to_block(p, func_index, block_index, s);
     return s->assignment.id;
+}
+
+size_t
+add_Call_to_block(struct PIR* p,
+                 int func_index,
+                 int block_index,
+                 int call_index)
+{
+    stmt* s = malloc(sizeof(stmt));
+    s->t = call;
+    s->call_ca.call_ids = call_index;
+    return add_stmt_to_block(p, func_index, block_index, s);
 }
 
 void free_PIR(struct PIR *p) {
