@@ -6,13 +6,13 @@
 
 #define STB_DS_IMPLEMENTATION
 #define SHIT_IS_IN_TESTING
+#include "PIR/compiler.h"
+#include "PIR/generator.h"
 #include "analyzer/analysis.h"
 #include "lex.h"
 #include "lib/env_args.h"
 #include "lib/stb_ds.h"
 #include "parse.h"
-#include "PIR/generator.h"
-#include "PIR/compiler.h"
 
 #include "llvm-c/Core.h"
 #include "llvm-c/Target.h"
@@ -204,64 +204,82 @@ main(const int argc, char** argv)
             }
             log_debug("creating PIR");
             struct PIR* p = create_PIR();
-            if (p == false) log_error("failed to generate PIR");
+            if (p == false)
+                log_error("failed to generate PIR");
             else {
-              typing t = INT8_TYPING;
-              typing t2 = INT16_TYPING;
-              size_t putchar_index = add_function_to_PIR(p, sdsnew("putchar"), &t, true, false);
-              val* v = malloc(sizeof(val));
-              v->t = t;
-              v->int__val = 'c';
+                typing t = INT8_TYPING;
+                typing t2 = INT16_TYPING;
+                size_t putchar_index =
+                  add_function_to_PIR(p, sdsnew("putchar"), &t, true, false);
+                val* v = malloc(sizeof(val));
+                v->t = t;
+                v->int__val = 'c';
 
-              size_t function_index = add_function_to_PIR(p, sdsnew("main"), &t, false, false);
-              if (function_index == -1) log_error("failed to add function to PIR");
-              else log_debug("successfully add function to PIR, index: %d", function_index);
-              size_t b_index = add_block_to_function(p, function_index);
-              expr* e_prev = malloc(sizeof(expr));
-              e_prev->t = Val;
-              e_prev->v.t = t;
-              e_prev->v.int__val = 111;
-              size_t old_var_index = add_Expr_to_block(p, function_index, b_index, e_prev, t);
-              log_debug("var_index: %d", old_var_index);
-              expr* e = malloc(sizeof(expr));
-              e->t = Func_val;
-              e->func_val = old_var_index;
-              size_t new_var_index = add_Expr_to_block(p, function_index, b_index, e, t);
-              log_debug("new var_index: %d", new_var_index);
+                size_t function_index =
+                  add_function_to_PIR(p, sdsnew("main"), &t, false, false);
+                if (function_index == -1)
+                    log_error("failed to add function to PIR");
+                else
+                    log_debug("successfully add function to PIR, index: %d",
+                              function_index);
+                size_t b_index = add_block_to_function(p, function_index);
+                expr* e_prev = malloc(sizeof(expr));
+                e_prev->t = Val;
+                e_prev->v.t = t;
+                e_prev->v.int__val = 111;
+                size_t old_var_index =
+                  add_Expr_to_block(p, function_index, b_index, e_prev, t);
+                log_debug("var_index: %d", old_var_index);
+                expr* e = malloc(sizeof(expr));
+                e->t = Func_val;
+                e->func_val = old_var_index;
+                size_t new_var_index =
+                  add_Expr_to_block(p, function_index, b_index, e, t);
+                log_debug("new var_index: %d", new_var_index);
 
-              expr* e_lhs = malloc(sizeof(expr));
-              e_lhs->t = Func_val;
-              e_lhs->func_val = old_var_index;
-              expr* e_rhs = malloc(sizeof(expr));
-              e_rhs->t = Func_val;
-              e_rhs->func_val = old_var_index;
-              expr* e_add = malloc(sizeof(expr));
-              e_add->t = Add;
-              e_add->b.lhs = e_lhs;
-              e_add->b.rhs = e_rhs;
-              size_t add_index = add_Expr_to_block(p, function_index, b_index, e_add, t);
-              log_debug("add_index: %d", add_index);
+                expr* e_lhs = malloc(sizeof(expr));
+                e_lhs->t = Func_val;
+                e_lhs->func_val = old_var_index;
+                expr* e_rhs = malloc(sizeof(expr));
+                e_rhs->t = Func_val;
+                e_rhs->func_val = old_var_index;
+                expr* e_add = malloc(sizeof(expr));
+                e_add->t = Add;
+                e_add->b.lhs = e_lhs;
+                e_add->b.rhs = e_rhs;
+                size_t add_index =
+                  add_Expr_to_block(p, function_index, b_index, e_add, t);
+                log_debug("add_index: %d", add_index);
 
-              // add call
-              size_t x = add_Call_to_block(p, function_index, b_index, 1);
-              log_debug("call index: %d", x);
+                // add call
+                vec_expr vvvvv = vec_expr_init();
+                vec_expr_push_back(&vvvvv, *e_lhs);
+                vec_expr_push_back(
+                  &vvvvv, *e_lhs); // overloading the putchar, this is fine in
+                                   // assembly level but this should be checked.
+                                   // (check should be enabled by flag and
+                                   // disabled by default since we check that in
+                                   // analysis (or just your typical assert?))
+                size_t x = add_Call_to_block(
+                  p, function_index, b_index, putchar_index, vvvvv);
+                log_debug("call index: %d", x);
 
-              expr* e_ret = malloc(sizeof(expr));
-              e_ret->t = Func_val;
-              e_ret->func_val = old_var_index;
-              size_t ret_index = add_Ret_to_block(p, function_index, b_index, e_ret);
-              log_debug("ret_index: %d", ret_index);
-              print_PIR(p);
-              LLVMModuleRef m = generate_LLVM_IR(p, "test");
-              LLVMDumpModule(m);
-              compile_module(m, "test_pir.o");
-              free_PIR(p);
+                expr* e_ret = malloc(sizeof(expr));
+                e_ret->t = Func_val;
+                e_ret->func_val = old_var_index;
+                size_t ret_index =
+                  add_Ret_to_block(p, function_index, b_index, e_ret);
+                log_debug("ret_index: %d", ret_index);
+                print_PIR(p);
+                LLVMModuleRef m = generate_LLVM_IR(p, "test");
+                LLVMDumpModule(m);
+                compile_module(m, "test_pir.o");
+                free_PIR(p);
             }
             free_parse_tree(tree);
         }
     }
     log_debug("testing llvm");
-
 
     test_llvm_wasm();
     test_llvm_native();
