@@ -252,14 +252,11 @@ main(const int argc, char** argv)
                 log_debug("add_index: %d", add_index);
 
                 // add call
+                expr* e_lhs2 = malloc(sizeof(expr));
+                e_lhs2->t = Func_val;
+                e_lhs2->func_val = old_var_index;
                 vec_expr vvvvv = vec_expr_init();
-                vec_expr_push_back(&vvvvv, *e_lhs);
-                vec_expr_push_back(
-                  &vvvvv, *e_lhs); // overloading the putchar, this is fine in
-                                   // assembly level but this should be checked.
-                                   // (check should be enabled by flag and
-                                   // disabled by default since we check that in
-                                   // analysis (or just your typical assert?))
+                vec_expr_push_back(&vvvvv, *e_lhs2);
                 size_t x = add_Call_to_block(
                   p, function_index, b_index, putchar_index, vvvvv);
                 log_debug("call index: %d", x);
@@ -275,6 +272,14 @@ main(const int argc, char** argv)
                 LLVMDumpModule(m);
                 compile_module(m, "test_pir.o");
                 free_PIR(p);
+                free(v);
+                free(e_prev);
+                free(e);
+                free(e_add);
+                free(e_lhs);
+                free(e_rhs);
+                free(e_ret);
+                LLVMDisposeModule(m);
             }
             free_parse_tree(tree);
         }

@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static void
+static LLVMBuilderRef
 add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRef t)
 {
     LLVMTypeRef exit_arg_types[] = { LLVMInt32Type() };
@@ -28,6 +28,7 @@ add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRef t)
     LLVMValueRef arg[] = { main_call };
     LLVMBuildCall2(builder2, exit_type, exit_func, arg, 1, "");
     LLVMBuildUnreachable(builder2);
+    return builder2;
 }
 
 #define TYSWITCH(a, b, c)                                                      \
@@ -140,12 +141,28 @@ LLVMValueRef_copy(T* v)
     return *v;
 }
 #include "lib/ctl/vec.h"
+#undef T
+
+#define T LLVMBuilderRef
+void
+LLVMBuilderRef_free(T* v)
+{
+    LLVMDisposeBuilder(*v);
+}
+T
+LLVMBuilderRef_copy(T* v)
+{
+    return *v;
+}
+#include "lib/ctl/vec.h"
+#undef T
 
 LLVMModuleRef
 generate_LLVM_IR(struct PIR* p, char* module_name)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName(module_name);
     vec_Func fs = vec_Func_init();
+    vec_LLVMBuilderRef b_ref = vec_LLVMBuilderRef_init();
     foreach (vec_MAIN_BLOCK, &p->main_blocks, iter) {
         switch (iter.ref->type) {
         case func: {
@@ -162,7 +179,9 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
               LLVMFunctionType(ret_type, NULL, 0, iter.ref->func.is_variadic);
             LLVMValueRef f =
               LLVMAddFunction(module, iter.ref->func.name, ret_type);
-            log_debug("type: %s", LLVMPrintTypeToString(ret_type));
+            char* type_string = LLVMPrintTypeToString(ret_type);
+            log_debug("type: %s", type_string);
+            LLVMDisposeMessage(type_string);
             Func* fi = malloc(sizeof(Func));
             fi->is_external = iter.ref->func.is_external;
             fi->v = f;
@@ -280,16 +299,20 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                 }
                 if (strcmp(iter.ref->func.name, "main") == 0) {
                     printf("found main!\n");
-                    add_default__start_func(
+                    vec_LLVMBuilderRef_push_back(&b_ref, add_default__start_func(
                       module,
                       f,
-                      ret_type); // the PIR should have only 1 main anyways
+                      ret_type)); // the PIR should have only 1 main anyways
                 }
+                vec_FuncVarReg_free(&v);
             }
+            vec_LLVMBuilderRef_push_back(&b_ref, builder); // list for dispose
             continue;
         }
         }
     }
+    vec_LLVMBuilderRef_free(&b_ref);
+    vec_Func_free(&fs);
     log_debug("successfully generate LLVM Module");
     return module;
 }

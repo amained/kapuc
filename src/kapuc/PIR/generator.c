@@ -32,8 +32,11 @@ MAIN_BLOCK_free(MAIN_BLOCK* b)
 {
     switch (b->type) {
     case func: {
-        vec_FUNC_VAR_free(&b->func.vv);
-        vec_BLOCK_free(&b->func.bs);
+        sdsfree(b->func.name);
+        if (!b->func.is_external) {
+            vec_FUNC_VAR_free(&b->func.vv);
+            vec_BLOCK_free(&b->func.bs);
+        }
     }
     }
     // free(b);
@@ -49,6 +52,7 @@ MAIN_BLOCK_copy(MAIN_BLOCK* b)
 void
 BLOCK_free(BLOCK* b)
 {
+    vec_stmt_free(b);
     // free(b);
 }
 BLOCK
@@ -62,7 +66,15 @@ BLOCK_copy(BLOCK* b)
 void
 stmt_free(stmt* s)
 {
-    // free(s);
+    switch (s->t) {
+    case call: {
+        vec_expr_free(&s->call_ca.value);
+        break;
+    }
+    case assignment:
+    case ret:
+        break;
+    }
 }
 stmt
 stmt_copy(stmt* s)
@@ -126,19 +138,17 @@ add_function_to_PIR(struct PIR* p,
     if (!is_external)
         assert(!is_variadic);
     b->type = func;
-    struct FUNC* f = malloc(sizeof(struct FUNC));
-    f->name = function_name;
+    b->func.name = function_name;
     if (is_external) {
-        f->is_external = true;
-        f->is_variadic = is_variadic;
+        b->func.is_external = true;
+        b->func.is_variadic = is_variadic;
     } else {
-        f->is_external = false;
-        f->is_variadic = false;
-        f->bs = vec_BLOCK_init();
-        f->vv = vec_FUNC_VAR_init();
+        b->func.is_external = false;
+        b->func.is_variadic = false;
+        b->func.bs = vec_BLOCK_init();
+        b->func.vv = vec_FUNC_VAR_init();
     }
-    f->t = *t;
-    b->func = *f;
+    b->func.t = *t;
     return add_main_block_to_PIR(p, b);
 }
 
@@ -222,5 +232,6 @@ void
 free_PIR(struct PIR* p)
 {
     vec_MAIN_BLOCK_free(&p->main_blocks);
+    free(p);
     // free(p);
 }
