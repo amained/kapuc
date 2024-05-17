@@ -39,8 +39,8 @@ add_default__start_func(LLVMModuleRef module, LLVMValueRef main, LLVMTypeRef t)
 
 #define ALL_TYPE(M)                                                            \
     M(0, LLVMInt8Type())                                                       \
-    M(1, LLVMInt16Type()) M(2, LLVMInt32Type()) M(3, LLVMInt64Type())          \
-      M(4, LLVMInt1Type())
+    M(1, LLVMInt16Type())                                                      \
+    M(2, LLVMInt32Type()) M(3, LLVMInt64Type()) M(4, LLVMInt1Type())
 
 static inline LLVMValueRef
 _resolve_static_val(val* v)
@@ -299,10 +299,12 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                 }
                 if (strcmp(iter.ref->func.name, "main") == 0) {
                     printf("found main!\n");
-                    vec_LLVMBuilderRef_push_back(&b_ref, add_default__start_func(
-                      module,
-                      f,
-                      ret_type)); // the PIR should have only 1 main anyways
+                    vec_LLVMBuilderRef_push_back(
+                      &b_ref,
+                      add_default__start_func(
+                        module,
+                        f,
+                        ret_type)); // the PIR should have only 1 main anyways
                 }
                 vec_FuncVarReg_free(&v);
             }
