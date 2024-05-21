@@ -226,6 +226,7 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                                   lhs);
                                 f->isAlloca_ed = true;
                                 f->v = lhs;
+                                vec_FuncVarReg_push_back(&v, *f);
                                 break;
                             }
                             default: {
@@ -251,10 +252,10 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                                 }
                                 f->isAlloca_ed = false;
                                 f->v = val;
+                                vec_FuncVarReg_push_back(&v, *f);
                                 break;
                             }
                             }
-                            vec_FuncVarReg_push_back(&v, *f);
                             continue;
                         }
                         case ret: {
@@ -286,6 +287,7 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                                            wtf.value,
                                            wtf.size,
                                            ""); // this is always global anyways
+                            vec_LLVMValueRef_free(&wtf); // wtf
                             continue;
                         }
                         default: {
@@ -297,6 +299,7 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                     }
                     current_pos++;
                 }
+                vec_FuncVarReg_free(&v);
                 if (strcmp(iter.ref->func.name, "main") == 0) {
                     printf("found main!\n");
                     vec_LLVMBuilderRef_push_back(
@@ -306,7 +309,6 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                         f,
                         ret_type)); // the PIR should have only 1 main anyways
                 }
-                vec_FuncVarReg_free(&v);
             }
             vec_LLVMBuilderRef_push_back(&b_ref, builder); // list for dispose
             continue;
@@ -319,17 +321,25 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
     return module;
 }
 
+#ifndef DEFAULT_TARGET
+#define AUTO_TARGET
+#define DEFAULT_TARGET LLVMGetDefaultTargetTriple()
+#endif
+
 void
-compile_module(LLVMModuleRef module, char* name)
+compile_module(LLVMModuleRef module, char* name, char* target_val)
 {
-    char* triple = LLVMGetDefaultTargetTriple();
+    char* triple;
+    if (target_val == NULL)
+        triple = DEFAULT_TARGET;
+    else
+        triple = target_val;
     LLVMTargetRef t = NULL;
     char* error = NULL;
     LLVMBool l = LLVMGetTargetFromTriple(triple, &t, &error);
     if (t == NULL || l != 0) {
         log_error("failed to get target: %s", error);
         LLVMDisposeMessage(error);
-        LLVMDisposeMessage(triple);
         exit(1);
     }
     LLVMTargetMachineRef machine =
@@ -342,6 +352,8 @@ compile_module(LLVMModuleRef module, char* name)
                               LLVMCodeModelMedium);
     // TODO: link here
     LLVMTargetMachineEmitToFile(machine, module, name, LLVMObjectFile, NULL);
+#ifdef AUTO_TARGET
     LLVMDisposeMessage(triple);
+#endif
     LLVMDisposeTargetMachine(machine);
 }

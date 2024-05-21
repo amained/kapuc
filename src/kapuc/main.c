@@ -202,10 +202,10 @@ main(const int argc, char** argv)
                 check_block(tree, NULL);
                 log_debug("ooh we survive segfault");
             }
-            log_debug("creating PIR");
+            log_debug("test creating PIR");
             struct PIR* p = create_PIR();
             if (p == false)
-                log_error("failed to generate PIR");
+                log_error("failed to create new PIR instance");
             else {
                 typing t = INT8_TYPING;
                 typing t2 = INT16_TYPING;
@@ -270,7 +270,7 @@ main(const int argc, char** argv)
                 print_PIR(p);
                 LLVMModuleRef m = generate_LLVM_IR(p, "test");
                 LLVMDumpModule(m);
-                compile_module(m, "test_pir.o");
+                compile_module(m, "test_pir.o", NULL);
                 free_PIR(p);
                 free(v);
                 free(e_prev);
@@ -284,6 +284,7 @@ main(const int argc, char** argv)
             free_parse_tree(tree);
         }
     }
+    log_debug("probably finished generating PIR");
     log_debug("testing llvm");
 
     test_llvm_wasm();

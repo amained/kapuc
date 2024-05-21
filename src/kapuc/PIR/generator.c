@@ -1,5 +1,7 @@
 #include "generator.h"
 
+#include "lib/ctl/ctl.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,7 +19,18 @@ create_PIR()
 void
 expr_free(expr* v)
 {
-    // we do nothing
+    switch (v->t) {
+    case Add:
+    case Mul:
+    case Del:
+    case Div:
+        expr_free(v->b.lhs);
+        expr_free(v->b.rhs);
+        break;
+    case Func_val:
+    case Val:
+        break;
+    }
 }
 expr
 expr_copy(expr* v)
@@ -72,7 +85,10 @@ stmt_free(stmt* s)
         break;
     }
     case assignment:
+        expr_free(&s->assignment.e);
+        break;
     case ret:
+        expr_free(&s->ret_val);
         break;
     }
 }
@@ -97,20 +113,98 @@ FUNC_VAR_copy(FUNC_VAR* f)
     return *b2;
 }
 
+static void
+print_expr(expr* e)
+{
+    if (e == NULL)
+        return;
+    switch (e->t) {
+    case Add:
+        fputs("add ", stdout);
+        print_expr(e->b.lhs);
+        fputs(", ", stdout);
+        print_expr(e->b.rhs);
+        return;
+    case Mul:
+        fputs("mul ", stdout);
+        print_expr(e->b.lhs);
+        fputs(", ", stdout);
+        print_expr(e->b.rhs);
+        return;
+    case Del:
+        fputs("del ", stdout);
+        print_expr(e->b.lhs);
+        fputs(", ", stdout);
+        print_expr(e->b.rhs);
+        return;
+    case Div:
+        fputs("div ", stdout);
+        print_expr(e->b.lhs);
+        fputs(", ", stdout);
+        print_expr(e->b.rhs);
+        return;
+    case Func_val:
+        printf("%%%zu", e->func_val);
+        return;
+    case Val:
+        assert(e->v.t.is_default_type);
+        printf("%d", e->v.int__val);
+        break;
+    }
+}
+
 bool
 print_PIR(struct PIR* p)
 {
     if (p == NULL)
         return false;
+    size_t current_id = 0;
     foreach (vec_MAIN_BLOCK, &p->main_blocks, iter) {
         switch (iter.ref->type) {
         case func: {
-            printf("FUNC %s\n", iter.ref->func.name);
+            printf("FUNC %s (id: %zu, is_external: %s) \n",
+                   iter.ref->func.name,
+                   current_id,
+                   iter.ref->func.is_external ? "true" : "false");
+            current_id++;
+            if (!iter.ref->func.is_external) {
+                // loop over all block
+                size_t cur_block = 0;
+                foreach (vec_BLOCK, &iter.ref->func.bs, block) {
+                    printf("\tblock id %zu\n", cur_block);
+                    cur_block++;
+                    foreach (vec_stmt, block.ref, stmt) {
+                        fputs("\t\t -> ", stdout);
+                        switch (stmt.ref->t) {
+                        case assignment:
+                            printf("assignment to %%%d, e = ",
+                                   stmt.ref->assignment.id);
+                            print_expr(&stmt.ref->assignment.e);
+                            fputc('\n', stdout);
+                            break;
+                        case ret:
+                            fputs("ret ", stdout);
+                            print_expr(&stmt.ref->ret_val);
+                            fputc('\n', stdout);
+                            break;
+                        case call:
+                            printf("call to %zu (", stmt.ref->call_ca.call_ids);
+                            foreach (
+                              vec_expr, &stmt.ref->call_ca.value, call_val) {
+                                print_expr(call_val.ref);
+                                fputs(", ", stdout);
+                            }
+                            fputs(")\n", stdout);
+                            break;
+                        }
+                    }
+                }
+            }
             continue;
         }
         default: {
             printf("unknown?? %d\n", iter.ref->type);
-            return false;
+            continue;
         }
         }
     }
