@@ -77,6 +77,18 @@ BLOCK_copy(BLOCK* b)
 }
 
 void
+int_case_free(int_case*)
+{
+}
+int_case
+int_case_copy(int_case* i)
+{
+    int_case* i2 = malloc(sizeof(int_case));
+    memcpy(i2, i, sizeof(int_case));
+    return *i2;
+}
+
+void
 stmt_free(stmt* s)
 {
     switch (s->t) {
@@ -86,6 +98,9 @@ stmt_free(stmt* s)
     }
     case assignment:
         expr_free(&s->assignment.e);
+        break;
+    case ic:
+        vec_int_case_free(&s->ics.ics);
         break;
     case ret:
         expr_free(&s->ret_val);
@@ -186,6 +201,8 @@ print_PIR(struct PIR* p)
                             fputs("ret ", stdout);
                             print_expr(&stmt.ref->ret_val);
                             fputc('\n', stdout);
+                            break;
+                        case ic:
                             break;
                         case call:
                             printf("call to %zu (", stmt.ref->call_ca.call_ids);
@@ -320,6 +337,46 @@ add_Call_to_block(struct PIR* p,
     s->call_ca.call_ids = call_index;
     s->call_ca.value = args;
     return add_stmt_to_block(p, func_index, block_index, s);
+}
+
+size_t
+add_intjmp_to_block(struct PIR* p,
+                    int func_index,
+                    int block_index,
+                    expr* to_switch)
+{
+    stmt* s = malloc(sizeof(stmt));
+    s->t = ic;
+    s->ics.ics = vec_int_case_init();
+    s->ics.to_switch = *to_switch;
+    return add_stmt_to_block(p, func_index, block_index, s);
+}
+
+size_t
+add_ic_to_intjmp(struct PIR* p,
+                 int func_index,
+                 int block_index,
+                 int stmt_index,
+                 int jmp_case,
+                 int jmp_result)
+{
+    if (func_index < p->main_blocks.size) {
+        MAIN_BLOCK* big_b = vec_MAIN_BLOCK_at(&p->main_blocks, func_index);
+        assert(big_b->type == func);
+        if (block_index < big_b->func.bs.size) {
+            BLOCK* smol_b = vec_BLOCK_at(&big_b->func.bs, block_index);
+            if (stmt_index < smol_b->size) {
+                stmt* s = vec_stmt_at(smol_b, stmt_index);
+                assert(s->t == ic);
+                int_case* c = malloc(sizeof(int_case));
+                c->jmp_case = jmp_case;
+                c->jmp_result = jmp_result;
+                vec_int_case_push_back(&s->ics.ics, *c);
+                return s->ics.ics.size - 1;
+            }
+        }
+    }
+    return -1;
 }
 
 void

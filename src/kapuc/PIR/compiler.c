@@ -265,6 +265,21 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                               resolve_val(&iter3.ref->ret_val, &v, builder));
                             continue;
                         }
+                        case ic: {
+                            log_debug("found int case!");
+                            LLVMValueRef x = LLVMBuildSwitch(
+                              builder,
+                              resolve_val(
+                                &iter3.ref->ics.to_switch, &v, builder),
+                              NULL,
+                              0); // TODO: we are not terminating shit, we
+                                  // should terminate shit for optimization I
+                                  // mean techincally LLVM would do that for us
+                                  // with the LowerSwitch but we could optimize
+                                  // the PIR before doing that??
+                            assert(false);
+                            LLVMAddCase(x, NULL, NULL);
+                        }
                         case call: {
                             log_debug("found call!");
                             Func* fi =

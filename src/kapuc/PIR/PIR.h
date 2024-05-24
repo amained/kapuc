@@ -73,7 +73,8 @@ typedef enum
 {
     assignment,
     ret,
-    call
+    call,
+    ic,
 } stmt_type;
 
 typedef struct
@@ -84,12 +85,32 @@ typedef struct
 
 typedef struct
 {
+    int jmp_case;
+    int jmp_result;
+} int_case;
+
+#define T int_case
+void
+int_case_free(T*);
+T
+int_case_copy(T*);
+#include "lib/ctl/vec.h"
+
+typedef struct
+{
+    expr to_switch;
+    vec_int_case ics;
+} int_switch;
+
+typedef struct
+{
     stmt_type t;
     union
     {
         struct assignment assignment;
         expr ret_val;
         call_expr call_ca;
+        int_switch ics;
     };
 } stmt;
 #define T stmt
