@@ -2,7 +2,6 @@
 
 #include "lex.h"
 #include "lib/log.h"
-#include "lib/sds.h"
 #include "lib/stb_ds.h"
 
 #include <stdio.h>
@@ -14,7 +13,7 @@ type_free(tree_ptr* t){
 tree_ptr
 type_copy(tree_ptr* t)
 {
-  return *t; // it is a pointer to pointer anyways?
+    return *t; // it is a pointer to pointer anyways?
 };
 
 static bool

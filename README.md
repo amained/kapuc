@@ -30,7 +30,7 @@ General programming language for low-level performant program.
     - `src/kapuc/{lex,parse}.{c,h}` for syntax/parser
   - (TODO) `src/kapu/` for the main package manager/build system
 - Before making pr, make sure
-  - You run `clang-format` with all of the files you modified (or simpler, ```git clang-format --staged``` for staged changes)
+  - You run `clang-format` with all of the files you modified (or simpler, ```git clang-format --staged``` for staged changes or ```ninja -C build clang-format``` for full project)
   - You make sure the build is successful
   - (TODO) check clang-tidy with `clang-tidy --warnings-as-errors=* ./src/kapuc/*.{c,h} ./lib/env_args.{cpp,h}`
 
