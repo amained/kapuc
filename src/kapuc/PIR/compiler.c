@@ -157,6 +157,13 @@ LLVMBuilderRef_copy(T* v)
 #include "lib/ctl/vec.h"
 #undef T
 
+// we don't have to use vec.h because this is just runtime static static stuff
+static inline LLVMBasicBlockRef*
+give_me_n_blocks(int n)
+{
+    return calloc(n, sizeof(LLVMBasicBlockRef));
+}
+
 LLVMModuleRef
 generate_LLVM_IR(struct PIR* p, char* module_name)
 {
@@ -190,14 +197,20 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                 char val[15]; // TODO: figure out why 15
                 size_t current_pos = 0;
                 vec_FuncVarReg v = vec_FuncVarReg_init();
+                LLVMBasicBlockRef* bbs =
+                  give_me_n_blocks(iter.ref->func.bs.size);
+                int current_block = 0;
                 foreach (vec_BLOCK, &iter.ref->func.bs, iter2) {
                     sprintf(val,
                             "$%zu",
                             current_pos); // TODO: add some debug info here on
                                           // debug build? Incase the compiler
                                           // f-up we could check the IR
-                    LLVMBasicBlockRef block = LLVMAppendBasicBlock(f, val);
-                    LLVMPositionBuilderAtEnd(builder, block);
+                    bbs[current_block] = LLVMAppendBasicBlock(
+                      f,
+                      val); // TODO: add vec_LLVMBasicBlockRef and get_block(..)
+                            // for the ic and stuff where we need to jump
+                    LLVMPositionBuilderAtEnd(builder, bbs[current_block]);
                     foreach (vec_stmt, iter2.ref, iter3) {
                         log_debug("checking");
                         switch (iter3.ref->t) {
@@ -272,11 +285,13 @@ generate_LLVM_IR(struct PIR* p, char* module_name)
                               resolve_val(
                                 &iter3.ref->ics.to_switch, &v, builder),
                               NULL,
-                              0); // TODO: we are not terminating shit, we
+                              1); // TODO: we are not terminating shit, we
                                   // should terminate shit for optimization I
                                   // mean techincally LLVM would do that for us
                                   // with the LowerSwitch but we could optimize
-                                  // the PIR before doing that??
+                                  // the PIR before doing that?? Also since we
+                                  // jump after this we should just like, be
+                                  // terminated???
                             assert(false);
                             LLVMAddCase(x, NULL, NULL);
                         }

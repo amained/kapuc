@@ -276,7 +276,10 @@ add_block_to_function(struct PIR* p, int func_index)
 }
 
 size_t
-add_stmt_to_block(struct PIR* p, int func_index, int block_index, stmt* stmt)
+add_stmt_to_block(struct PIR* p,
+                  size_t func_index,
+                  size_t block_index,
+                  stmt* stmt)
 {
     if (func_index < p->main_blocks.size) {
         MAIN_BLOCK* big_b = vec_MAIN_BLOCK_at(&p->main_blocks, func_index);
@@ -354,11 +357,11 @@ add_intjmp_to_block(struct PIR* p,
 
 size_t
 add_ic_to_intjmp(struct PIR* p,
-                 int func_index,
-                 int block_index,
-                 int stmt_index,
+                 size_t func_index,
+                 size_t block_index,
+                 size_t stmt_index,
                  int jmp_case,
-                 int jmp_result)
+                 size_t jmp_result)
 {
     if (func_index < p->main_blocks.size) {
         MAIN_BLOCK* big_b = vec_MAIN_BLOCK_at(&p->main_blocks, func_index);

@@ -46,11 +46,11 @@ add_intjmp_to_block(struct PIR* p,
 
 size_t
 add_ic_to_intjmp(struct PIR* p,
-                 int func_index,
-                 int block_index,
-                 int stmt_index,
+                 size_t func_index,
+                 size_t block_index,
+                 size_t stmt_index,
                  int jmp_case,
-                 int jmp_result);
+                 size_t jmp_result);
 #define INT8_TYPING                                                            \
     {                                                                          \
         .is_default_type = true, .default_type = 0                             \
